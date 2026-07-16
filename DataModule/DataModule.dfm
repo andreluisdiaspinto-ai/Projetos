@@ -285,6 +285,26 @@ object DM: TDM
       Precision = 18
       Size = 2
     end
+    object SqlProdutoPRECO_CUSTO: TIBBCDField
+      FieldName = 'PRECO_CUSTO'
+      Origin = 'PRODUTO.PRECO_CUSTO'
+      currency = True
+      DisplayFormat = '#,##0.00'
+      Precision = 18
+      Size = 2
+    end
+    object SqlProdutoMARGEM_LUCRO: TIBBCDField
+      FieldName = 'MARGEM_LUCRO'
+      Origin = 'PRODUTO.MARGEM_LUCRO'
+      DisplayFormat = '#,##0.00'
+      Precision = 18
+      Size = 2
+    end
+    object SqlProdutoUND: TIBStringField
+      FieldName = 'UND'
+      Origin = 'PRODUTO.UND'
+      Size = 6
+    end
     object SqlProdutoESTOQUE_ATUAL: TIBBCDField
       FieldName = 'ESTOQUE_ATUAL'
       Origin = 'PRODUTO.ESTOQUE_ATUAL'
@@ -606,6 +626,9 @@ object DM: TDM
       '  MARCA,'
       '  GRUPO,'
       '  PRECO_VENDA,'
+      '  PRECO_CUSTO,'
+      '  MARGEM_LUCRO,'
+      '  UND,'
       '  ESTOQUE_ATUAL'
       'from PRODUTO '
       'where'
@@ -619,6 +642,9 @@ object DM: TDM
       '  MARCA = :MARCA,'
       '  GRUPO = :GRUPO,'
       '  PRECO_VENDA = :PRECO_VENDA,'
+      '  PRECO_CUSTO = :PRECO_CUSTO,'
+      '  MARGEM_LUCRO = :MARGEM_LUCRO,'
+      '  UND = :UND,'
       '  ESTOQUE_ATUAL = :ESTOQUE_ATUAL'
       'where'
       ' CODIGO = :OLD_CODIGO')
@@ -626,12 +652,11 @@ object DM: TDM
       'insert into PRODUTO'
       
         '  (DESCRICAO, REFERENCIA, CODIGO_BARRAS, MARCA, GRUPO, PRECO_VEN' +
-        'DA, ESTOQUE_ATUAL)'
+        'DA, PRECO_CUSTO, MARGEM_LUCRO, UND, ESTOQUE_ATUAL)'
       'values'
       
         '  (:DESCRICAO, :REFERENCIA, :CODIGO_BARRAS, :MARCA, :GRUPO, :PRE' +
-        'CO_VENDA, '
-      '   :ESTOQUE_ATUAL)')
+        'CO_VENDA, :PRECO_CUSTO, :MARGEM_LUCRO, :UND, :ESTOQUE_ATUAL)')
     DeleteSQL.Strings = (
       'delete from PRODUTO'
       'where'

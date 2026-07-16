@@ -522,7 +522,7 @@ object Form_Produto: TForm_Produto
       Left = 12
       Top = 310
       Width = 896
-      Height = 138
+      Height = 190
       Margins.Left = 0
       Margins.Top = 8
       Margins.Right = 0
@@ -536,8 +536,49 @@ object Form_Produto: TForm_Produto
       Font.Style = [fsBold]
       ParentFont = False
       TabOrder = 1
-      object LabelPrecoVenda: TLabel
+      object LabelUnd: TLabel
         Left = 16
+        Top = 32
+        Width = 24
+        Height = 15
+        Caption = 'UND'
+        FocusControl = DBEditUnd
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = 3355443
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
+        Font.Style = []
+        ParentFont = False
+      end
+      object LabelUndAst: TLabel
+        Left = 44
+        Top = 32
+        Width = 5
+        Height = 15
+        Caption = '*'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clRed
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
+        Font.Style = []
+        ParentFont = False
+      end
+      object LabelPrecoCusto: TLabel
+        Left = 148
+        Top = 32
+        Width = 76
+        Height = 15
+        Caption = 'Pre'#231'o de custo'
+        FocusControl = DBEditPrecoCusto
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = 3355443
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
+        Font.Style = []
+        ParentFont = False
+      end
+      object LabelPrecoVenda: TLabel
+        Left = 348
         Top = 32
         Width = 81
         Height = 15
@@ -551,7 +592,7 @@ object Form_Produto: TForm_Produto
         ParentFont = False
       end
       object LabelEstoqueAtual: TLabel
-        Left = 220
+        Left = 548
         Top = 32
         Width = 71
         Height = 15
@@ -564,8 +605,64 @@ object Form_Produto: TForm_Produto
         Font.Style = []
         ParentFont = False
       end
-      object DBEditPrecoVenda: TDBEdit
+      object LabelMargemLucro: TLabel
         Left = 16
+        Top = 88
+        Width = 103
+        Height = 15
+        Caption = 'Margem de lucro (%)'
+        FocusControl = DBEditMargemLucro
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = 3355443
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
+        Font.Style = []
+        ParentFont = False
+      end
+      object DBEditUnd: TDBEdit
+        Left = 16
+        Top = 52
+        Width = 120
+        Height = 27
+        Hint = 'A unidade de medida'
+        CharCase = ecUpperCase
+        DataField = 'UND'
+        DataSource = DM.DsProduto
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = 3355443
+        Font.Height = -14
+        Font.Name = 'Segoe UI'
+        Font.Style = []
+        MaxLength = 6
+        ParentFont = False
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 0
+        OnEnter = EditFocoEnter
+        OnExit = DBEditObrigatorioExit
+      end
+      object DBEditPrecoCusto: TDBEdit
+        Left = 148
+        Top = 52
+        Width = 188
+        Height = 27
+        Hint = 'O preco de custo'
+        DataField = 'PRECO_CUSTO'
+        DataSource = DM.DsProduto
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = 3355443
+        Font.Height = -14
+        Font.Name = 'Segoe UI'
+        Font.Style = []
+        ParentFont = False
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 1
+        OnEnter = EditFocoEnter
+        OnExit = DBEditPrecoCustoExit
+      end
+      object DBEditPrecoVenda: TDBEdit
+        Left = 348
         Top = 52
         Width = 188
         Height = 27
@@ -580,12 +677,12 @@ object Form_Produto: TForm_Produto
         ParentFont = False
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 0
+        TabOrder = 2
         OnEnter = EditFocoEnter
         OnExit = DBEditValorPositivoExit
       end
       object DBEditEstoqueAtual: TDBEdit
-        Left = 220
+        Left = 548
         Top = 52
         Width = 188
         Height = 27
@@ -600,9 +697,30 @@ object Form_Produto: TForm_Produto
         ParentFont = False
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 1
+        TabOrder = 3
         OnEnter = EditFocoEnter
         OnExit = DBEditValorPositivoExit
+      end
+      object DBEditMargemLucro: TDBEdit
+        Left = 16
+        Top = 108
+        Width = 188
+        Height = 27
+        Hint = 'Calculada automaticamente: ((preco venda - preco custo) / preco custo) * 100'
+        Color = clBtnFace
+        DataField = 'MARGEM_LUCRO'
+        DataSource = DM.DsProduto
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = 3355443
+        Font.Height = -14
+        Font.Name = 'Segoe UI'
+        Font.Style = []
+        ParentFont = False
+        ParentShowHint = False
+        ReadOnly = True
+        ShowHint = True
+        TabOrder = 4
+        OnEnter = EditFocoEnter
       end
     end
   end

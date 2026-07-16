@@ -41,6 +41,9 @@ type
     SqlProdutoMARCA: TIBStringField;
     SqlProdutoGRUPO: TIBStringField;
     SqlProdutoPRECO_VENDA: TIBBCDField;
+    SqlProdutoPRECO_CUSTO: TIBBCDField;
+    SqlProdutoMARGEM_LUCRO: TIBBCDField;
+    SqlProdutoUND: TIBStringField;
     SqlProdutoESTOQUE_ATUAL: TIBBCDField;
     SqlVenda: TIBQuery;
     CDSVenda: TClientDataSet;

@@ -383,21 +383,27 @@ end;
 
 procedure TForm_Principal.AbrirFormularioMDI(Form: TForm);
 begin
-  // Toda abertura via menu/sidebar deve permanecer como filho MDI do Principal.
-  // Consultas modal (ShowModal) e o Login ficam de fora deste helper.
   if Form = nil then
     Exit;
 
   IniciarCarregamento(Self);
   try
-    Application.ProcessMessages;
+    try
+      Application.ProcessMessages;
 
-    if Form.FormStyle <> fsMDIChild then
-      Form.FormStyle := fsMDIChild;
+      if Form.FormStyle <> fsMDIChild then
+        Form.FormStyle := fsMDIChild;
 
-    Form.Show;
-    AplicarFormEstiloWeb(Form);
-    Form.BringToFront;
+      Form.Show;
+      AplicarFormEstiloWeb(Form);
+      Form.BringToFront;
+    except
+      on E: Exception do
+      begin
+        AbortarCarregamento;
+        raise;
+      end;
+    end;
   finally
     FinalizarCarregamento;
   end;
@@ -429,40 +435,37 @@ end;
 procedure TForm_Principal.ActClientesExecute(Sender: TObject);
 begin
   ObserveLogAction(Self, 'ActClientes', 'PanelItemClientes');
-  IniciarCarregamento(Self);
-  try
-    if not Assigned(Form_Cliente) then
-      Form_Cliente := TForm_Cliente.Create(Self);
-    AbrirFormularioMDI(Form_Cliente);
-  finally
-    FinalizarCarregamento;
-  end;
+  ExecutarComCarregamento(Self,
+    procedure
+    begin
+      if not Assigned(Form_Cliente) then
+        Form_Cliente := TForm_Cliente.Create(Self);
+      AbrirFormularioMDI(Form_Cliente);
+    end);
 end;
 
 procedure TForm_Principal.ActProdutosExecute(Sender: TObject);
 begin
   ObserveLogAction(Self, 'ActProdutos', 'PanelItemProdutos');
-  IniciarCarregamento(Self);
-  try
-    if not Assigned(Form_Produto) then
-      Form_Produto := TForm_Produto.Create(Self);
-    AbrirFormularioMDI(Form_Produto);
-  finally
-    FinalizarCarregamento;
-  end;
+  ExecutarComCarregamento(Self,
+    procedure
+    begin
+      if not Assigned(Form_Produto) then
+        Form_Produto := TForm_Produto.Create(Self);
+      AbrirFormularioMDI(Form_Produto);
+    end);
 end;
 
 procedure TForm_Principal.ActVendasExecute(Sender: TObject);
 begin
   ObserveLogAction(Self, 'ActVendas', 'PanelItemVendas');
-  IniciarCarregamento(Self);
-  try
-    if not Assigned(Form_Venda) then
-      Form_Venda := TForm_Venda.Create(Self);
-    AbrirFormularioMDI(Form_Venda);
-  finally
-    FinalizarCarregamento;
-  end;
+  ExecutarComCarregamento(Self,
+    procedure
+    begin
+      if not Assigned(Form_Venda) then
+        Form_Venda := TForm_Venda.Create(Self);
+      AbrirFormularioMDI(Form_Venda);
+    end);
 end;
 
 procedure TForm_Principal.ActRelatoriosExecute(Sender: TObject);
@@ -494,151 +497,139 @@ begin
       mtWarning, [mbOK], 0);
     Exit;
   end;
-  IniciarCarregamento(Self);
-  try
-    if not Assigned(Form_Usuario) then
-      Form_Usuario := TForm_Usuario.Create(Self);
-    AbrirFormularioMDI(Form_Usuario);
-  finally
-    FinalizarCarregamento;
-  end;
+  ExecutarComCarregamento(Self,
+    procedure
+    begin
+      if not Assigned(Form_Usuario) then
+        Form_Usuario := TForm_Usuario.Create(Self);
+      AbrirFormularioMDI(Form_Usuario);
+    end);
 end;
 
 procedure TForm_Principal.MenuItemTemasClick(Sender: TObject);
 begin
   ObserveLogAction(Self, 'ActTemas', 'MenuItemTemas');
-  IniciarCarregamento(Self);
-  try
-    if not Assigned(Form_Temas) then
-      Form_Temas := TForm_Temas.Create(Self);
-    AbrirFormularioMDI(Form_Temas);
-  finally
-    FinalizarCarregamento;
-  end;
+  ExecutarComCarregamento(Self,
+    procedure
+    begin
+      if not Assigned(Form_Temas) then
+        Form_Temas := TForm_Temas.Create(Self);
+      AbrirFormularioMDI(Form_Temas);
+    end);
 end;
 
 procedure TForm_Principal.MenuItemRelClientesClick(Sender: TObject);
 begin
-  IniciarCarregamento(Self);
-  try
-    if not Assigned(Form_RelatorioCliente) then
-      Form_RelatorioCliente := TForm_RelatorioCliente.Create(Self);
-    AbrirFormularioMDI(Form_RelatorioCliente);
-  finally
-    FinalizarCarregamento;
-  end;
+  ExecutarComCarregamento(Self,
+    procedure
+    begin
+      if not Assigned(Form_RelatorioCliente) then
+        Form_RelatorioCliente := TForm_RelatorioCliente.Create(Self);
+      AbrirFormularioMDI(Form_RelatorioCliente);
+    end);
 end;
 
 procedure TForm_Principal.MenuItemRelProdutosClick(Sender: TObject);
 begin
-  IniciarCarregamento(Self);
-  try
-    if not Assigned(Form_RelatorioProduto) then
-      Form_RelatorioProduto := TForm_RelatorioProduto.Create(Self);
-    AbrirFormularioMDI(Form_RelatorioProduto);
-  finally
-    FinalizarCarregamento;
-  end;
+  ExecutarComCarregamento(Self,
+    procedure
+    begin
+      if not Assigned(Form_RelatorioProduto) then
+        Form_RelatorioProduto := TForm_RelatorioProduto.Create(Self);
+      AbrirFormularioMDI(Form_RelatorioProduto);
+    end);
 end;
 
 procedure TForm_Principal.MenuItemRelVendasClick(Sender: TObject);
 begin
-  IniciarCarregamento(Self);
-  try
-    if not Assigned(Form_RelatorioVenda) then
-      Form_RelatorioVenda := TForm_RelatorioVenda.Create(Self);
-    AbrirFormularioMDI(Form_RelatorioVenda);
-  finally
-    FinalizarCarregamento;
-  end;
+  ExecutarComCarregamento(Self,
+    procedure
+    begin
+      if not Assigned(Form_RelatorioVenda) then
+        Form_RelatorioVenda := TForm_RelatorioVenda.Create(Self);
+      AbrirFormularioMDI(Form_RelatorioVenda);
+    end);
 end;
 
 procedure TForm_Principal.MenuItemRelVendasAnaliticoClick(Sender: TObject);
 begin
-  IniciarCarregamento(Self);
-  try
-    if not Assigned(Form_RelatorioVendaAnalitica) then
-      Form_RelatorioVendaAnalitica := TForm_RelatorioVendaAnalitica.Create(Self);
-    AbrirFormularioMDI(Form_RelatorioVendaAnalitica);
-  finally
-    FinalizarCarregamento;
-  end;
+  ExecutarComCarregamento(Self,
+    procedure
+    begin
+      if not Assigned(Form_RelatorioVendaAnalitica) then
+        Form_RelatorioVendaAnalitica := TForm_RelatorioVendaAnalitica.Create(Self);
+      AbrirFormularioMDI(Form_RelatorioVendaAnalitica);
+    end);
 end;
 
 procedure TForm_Principal.MenuItemRelVendasClienteClick(Sender: TObject);
 begin
-  IniciarCarregamento(Self);
-  try
-    if not Assigned(Form_RelatorioVendaCliente) then
-      Form_RelatorioVendaCliente := TForm_RelatorioVendaCliente.Create(Self);
-    AbrirFormularioMDI(Form_RelatorioVendaCliente);
-  finally
-    FinalizarCarregamento;
-  end;
+  ExecutarComCarregamento(Self,
+    procedure
+    begin
+      if not Assigned(Form_RelatorioVendaCliente) then
+        Form_RelatorioVendaCliente := TForm_RelatorioVendaCliente.Create(Self);
+      AbrirFormularioMDI(Form_RelatorioVendaCliente);
+    end);
 end;
 
 procedure TForm_Principal.MenuItemRelVendasProdutoClick(Sender: TObject);
 begin
-  IniciarCarregamento(Self);
-  try
-    if not Assigned(Form_RelatorioVendaProduto) then
-      Form_RelatorioVendaProduto := TForm_RelatorioVendaProduto.Create(Self);
-    AbrirFormularioMDI(Form_RelatorioVendaProduto);
-  finally
-    FinalizarCarregamento;
-  end;
+  ExecutarComCarregamento(Self,
+    procedure
+    begin
+      if not Assigned(Form_RelatorioVendaProduto) then
+        Form_RelatorioVendaProduto := TForm_RelatorioVendaProduto.Create(Self);
+      AbrirFormularioMDI(Form_RelatorioVendaProduto);
+    end);
 end;
 
 procedure TForm_Principal.MenuItemRelVendasSinteticaClienteClick(Sender: TObject);
 begin
-  IniciarCarregamento(Self);
-  try
-    if not Assigned(Form_RelatorioVendaSinteticaCliente) then
-      Form_RelatorioVendaSinteticaCliente :=
-        TForm_RelatorioVendaSinteticaCliente.Create(Self);
-    AbrirFormularioMDI(Form_RelatorioVendaSinteticaCliente);
-  finally
-    FinalizarCarregamento;
-  end;
+  ExecutarComCarregamento(Self,
+    procedure
+    begin
+      if not Assigned(Form_RelatorioVendaSinteticaCliente) then
+        Form_RelatorioVendaSinteticaCliente :=
+          TForm_RelatorioVendaSinteticaCliente.Create(Self);
+      AbrirFormularioMDI(Form_RelatorioVendaSinteticaCliente);
+    end);
 end;
 
 procedure TForm_Principal.MenuItemRelVendasClienteGradeClick(Sender: TObject);
 begin
-  IniciarCarregamento(Self);
-  try
-    if not Assigned(Form_RelatorioVendaClienteGrade) then
-      Form_RelatorioVendaClienteGrade :=
-        TForm_RelatorioVendaClienteGrade.Create(Self);
-    AbrirFormularioMDI(Form_RelatorioVendaClienteGrade);
-  finally
-    FinalizarCarregamento;
-  end;
+  ExecutarComCarregamento(Self,
+    procedure
+    begin
+      if not Assigned(Form_RelatorioVendaClienteGrade) then
+        Form_RelatorioVendaClienteGrade :=
+          TForm_RelatorioVendaClienteGrade.Create(Self);
+      AbrirFormularioMDI(Form_RelatorioVendaClienteGrade);
+    end);
 end;
 
 procedure TForm_Principal.MenuItemEtiquetaProdutoClick(Sender: TObject);
 begin
-  IniciarCarregamento(Self);
-  try
-    if not Assigned(Form_EmiteEtiquetaProdutoGondula) then
-      Form_EmiteEtiquetaProdutoGondula :=
-        TForm_EmiteEtiquetaProdutoGondula.Create(Self);
-    AbrirFormularioMDI(Form_EmiteEtiquetaProdutoGondula);
-  finally
-    FinalizarCarregamento;
-  end;
+  ExecutarComCarregamento(Self,
+    procedure
+    begin
+      if not Assigned(Form_EmiteEtiquetaProdutoGondula) then
+        Form_EmiteEtiquetaProdutoGondula :=
+          TForm_EmiteEtiquetaProdutoGondula.Create(Self);
+      AbrirFormularioMDI(Form_EmiteEtiquetaProdutoGondula);
+    end);
 end;
 
 procedure TForm_Principal.MenuItemEtiquetaClienteClick(Sender: TObject);
 begin
-  IniciarCarregamento(Self);
-  try
-    if not Assigned(Form_EmiteEtiquetaCliente) then
-      Form_EmiteEtiquetaCliente :=
-        TForm_EmiteEtiquetaCliente.Create(Self);
-    AbrirFormularioMDI(Form_EmiteEtiquetaCliente);
-  finally
-    FinalizarCarregamento;
-  end;
+  ExecutarComCarregamento(Self,
+    procedure
+    begin
+      if not Assigned(Form_EmiteEtiquetaCliente) then
+        Form_EmiteEtiquetaCliente :=
+          TForm_EmiteEtiquetaCliente.Create(Self);
+      AbrirFormularioMDI(Form_EmiteEtiquetaCliente);
+    end);
 end;
 
 procedure TForm_Principal.ActSobreExecute(Sender: TObject);

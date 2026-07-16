@@ -66,10 +66,17 @@ type
     DBEditGrupo: TDBEdit;
 
     GroupBoxValores: TGroupBox;
+    LabelUnd: TLabel;
+    LabelUndAst: TLabel;
+    DBEditUnd: TDBEdit;
+    LabelPrecoCusto: TLabel;
+    DBEditPrecoCusto: TDBEdit;
     LabelPrecoVenda: TLabel;
     DBEditPrecoVenda: TDBEdit;
     LabelEstoqueAtual: TLabel;
     DBEditEstoqueAtual: TDBEdit;
+    LabelMargemLucro: TLabel;
+    DBEditMargemLucro: TDBEdit;
 
     PanelRodape: TPanel;
     BtnPrimeiro: TBitBtn;
@@ -130,6 +137,7 @@ type
     procedure DBEditObrigatorioExit(Sender: TObject);
     procedure DBEditCodigoBarrasKeyPress(Sender: TObject; var Key: Char);
     procedure DBEditValorPositivoExit(Sender: TObject);
+    procedure DBEditPrecoCustoExit(Sender: TObject);
     procedure EditFocoEnter(Sender: TObject);
     procedure EditFocoExit(Sender: TObject);
   private
@@ -145,6 +153,7 @@ type
     procedure ConfigurarGlyphsBotoes;
     procedure AplicarLayoutInicial;
     procedure AtualizarEstadoUI;
+    procedure RecalcularMargemLucro;
 
     procedure DsProdutoDataChangeChained(Sender: TObject; Field: TField);
     procedure DsProdutoStateChangeChained(Sender: TObject);
@@ -196,6 +205,7 @@ begin
   LabelDescricaoAst.Font.Color    := clRed;
   LabelReferenciaAst.Font.Color   := clRed;
   LabelCodigoBarrasAst.Font.Color := clRed;
+  LabelUndAst.Font.Color          := clRed;
 end;
 
 function TForm_Produto.ControleEmSomenteLeitura(Ctrl: TWinControl): Boolean;
@@ -301,8 +311,11 @@ begin
   DBEditCodigoBarras.ReadOnly := not EmEdicao;
   DBEditMarca.ReadOnly        := not EmEdicao;
   DBEditGrupo.ReadOnly        := not EmEdicao;
+  DBEditUnd.ReadOnly          := not EmEdicao;
+  DBEditPrecoCusto.ReadOnly   := not EmEdicao;
   DBEditPrecoVenda.ReadOnly   := not EmEdicao;
   DBEditEstoqueAtual.ReadOnly := not EmEdicao;
+  DBEditMargemLucro.ReadOnly  := True;
 
   if EmEdicao then
     CorCampos := COR_EDIT_NORMAL
@@ -314,8 +327,31 @@ begin
   DBEditCodigoBarras.Color := CorCampos;
   DBEditMarca.Color        := CorCampos;
   DBEditGrupo.Color        := CorCampos;
+  DBEditUnd.Color          := CorCampos;
+  DBEditPrecoCusto.Color   := CorCampos;
   DBEditPrecoVenda.Color   := CorCampos;
   DBEditEstoqueAtual.Color := CorCampos;
+  DBEditMargemLucro.Color  := COR_EDIT_READONLY;
+end;
+
+procedure TForm_Produto.RecalcularMargemLucro;
+var
+  lCusto, lVenda, lMargem: Double;
+begin
+  if not Assigned(Dm) or not Assigned(Dm.SqlProduto) then
+    Exit;
+  if not (Dm.SqlProduto.State in [dsInsert, dsEdit]) then
+    Exit;
+
+  lCusto := Dm.SqlProduto.FieldByName('PRECO_CUSTO').AsFloat;
+  lVenda := Dm.SqlProduto.FieldByName('PRECO_VENDA').AsFloat;
+  if lCusto > 0 then
+    lMargem := ((lVenda - lCusto) / lCusto) * 100
+  else
+    lMargem := 0;
+
+  lMargem := Round(lMargem * 100) / 100;
+  Dm.SqlProduto.FieldByName('MARGEM_LUCRO').AsFloat := lMargem;
 end;
 
 { Chained events do DataSource }
@@ -325,6 +361,9 @@ procedure TForm_Produto.DsProdutoDataChangeChained(Sender: TObject;
 begin
   if Assigned(FOldDataChange) then
     FOldDataChange(Sender, Field);
+  if Assigned(Field) and
+     ((Field.FieldName = 'PRECO_CUSTO') or (Field.FieldName = 'PRECO_VENDA')) then
+    RecalcularMargemLucro;
   AtualizarEstadoUI;
 end;
 
@@ -486,6 +525,14 @@ begin
   end
   else if Edit.Name = FObserveEnterControl then
     ObserveLogFill(Self, Edit.Name, FObserveEnterValue, Edit.Text);
+
+  if (Edit = DBEditPrecoVenda) or (Edit = DBEditPrecoCusto) then
+    RecalcularMargemLucro;
+end;
+
+procedure TForm_Produto.DBEditPrecoCustoExit(Sender: TObject);
+begin
+  DBEditValorPositivoExit(Sender);
 end;
 
 function TForm_Produto.ValidarCamposObrigatorios: Boolean;
@@ -510,6 +557,18 @@ begin
   if CampoVazio(DBEditDescricao)    then Exit(FalharEm(DBEditDescricao,    'Descricao'));
   if CampoVazio(DBEditReferencia)   then Exit(FalharEm(DBEditReferencia,   'Referencia'));
   if CampoVazio(DBEditCodigoBarras) then Exit(FalharEm(DBEditCodigoBarras, 'Codigo de Barras'));
+  if CampoVazio(DBEditUnd)          then Exit(FalharEm(DBEditUnd,          'UND'));
+
+  if Assigned(DBEditPrecoCusto.Field) and (DBEditPrecoCusto.Field.AsFloat < 0) then
+  begin
+    DBEditPrecoCusto.Color := COR_EDIT_ERRO;
+    FCampoComErro          := DBEditPrecoCusto;
+    MostrarBaloonErro(DBEditPrecoCusto, 'Valor invalido',
+      'O preco de custo nao pode ser negativo.');
+    ReagendarFocoNoCampo(DBEditPrecoCusto);
+    Result := False;
+    Exit;
+  end;
 
   if Assigned(DBEditPrecoVenda.Field) and (DBEditPrecoVenda.Field.AsFloat < 0) then
   begin
@@ -674,8 +733,11 @@ end;
 procedure TForm_Produto.BtnInserirClick(Sender: TObject);
 begin
   Dm.SqlProduto.Insert;
+  DBEditPrecoCusto.Field.AsFloat   := 0.00;
   DBEditPrecoVenda.Field.AsFloat   := 0.00;
+  DBEditMargemLucro.Field.AsFloat  := 0.00;
   DBEditEstoqueAtual.Field.AsFloat := 0.00;
+  DBEditUnd.Field.AsString         := '';
   if Dm.QueryId.Active then
     Dm.QueryId.Close;
   Dm.QueryId.SQL.Text :=
@@ -705,6 +767,8 @@ begin
 
   if not ValidarCamposObrigatorios then
     Exit;
+
+  RecalcularMargemLucro;
 
   ObserveEmitSnapshot(Self, Dm.SqlProduto);
   try

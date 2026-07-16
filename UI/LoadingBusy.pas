@@ -7,18 +7,20 @@ unit LoadingBusy;
 interface
 
 uses
-  Vcl.Forms;
+  System.SysUtils, Vcl.Forms;
 
 procedure IniciarCarregamento(OwnerForm: TCustomForm);
 procedure FinalizarCarregamento;
+procedure AbortarCarregamento;
+procedure ExecutarComCarregamento(OwnerForm: TCustomForm; const AAction: TProc);
 function CarregamentoAtivo: Boolean;
 
 implementation
 
 uses
   Winapi.Windows,
-  System.Classes, System.SysUtils, System.Types, System.Math, System.SyncObjs,
-  Vcl.Controls, Vcl.Graphics, Vcl.ExtCtrls, Vcl.StdCtrls,
+  System.Classes, System.Types, System.Math, System.SyncObjs,
+  Vcl.Controls, Vcl.Graphics, Vcl.ExtCtrls, Vcl.StdCtrls, Vcl.Dialogs,
   Vcl.Imaging.GIFImg,
   UITheme;
 
@@ -109,11 +111,20 @@ end;
 
 procedure TSpinnerThread.Execute;
 begin
-  while not Terminated do
-  begin
-    FAngle := (FAngle + 8) mod 360;
-    Synchronize(InvalidateOverlay);
-    Sleep(30);
+  try
+    while not Terminated do
+    begin
+      FAngle := (FAngle + 8) mod 360;
+      try
+        Synchronize(InvalidateOverlay);
+      except
+        Terminate;
+        Exit;
+      end;
+      Sleep(30);
+    end;
+  except
+    Terminate;
   end;
 end;
 
@@ -376,6 +387,33 @@ begin
     FreeAndNil(GOverlay);
   end;
   GOwnerForm := nil;
+end;
+
+procedure AbortarCarregamento;
+begin
+  GRefCount := 0;
+  LiberarOverlay;
+end;
+
+procedure ExecutarComCarregamento(OwnerForm: TCustomForm; const AAction: TProc);
+begin
+  try
+    try
+      IniciarCarregamento(OwnerForm);
+      if Assigned(AAction) then
+        AAction;
+    except
+      on E: Exception do
+      begin
+        AbortarCarregamento;
+        ShowMessage('Erro durante o carregamento:' + sLineBreak + sLineBreak +
+          E.Message);
+        Application.Terminate;
+      end;
+    end;
+  finally
+    FinalizarCarregamento;
+  end;
 end;
 
 procedure IniciarCarregamento(OwnerForm: TCustomForm);
