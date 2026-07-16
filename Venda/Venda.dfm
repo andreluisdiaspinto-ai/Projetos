@@ -5,7 +5,7 @@ object Form_Venda: TForm_Venda
   BorderStyle = bsNone
   Caption = 'Vendas'
   ClientHeight = 720
-  ClientWidth = 1100
+  ClientWidth = 1144
   Color = 16119285
   Font.Charset = DEFAULT_CHARSET
   Font.Color = 3355443
@@ -18,7 +18,7 @@ object Form_Venda: TForm_Venda
   Position = poMainFormCenter
   Visible = True
   Constraints.MinHeight = 620
-  Constraints.MinWidth = 1000
+  Constraints.MinWidth = 1040
   OnActivate = FormActivate
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
@@ -31,7 +31,7 @@ object Form_Venda: TForm_Venda
   object Panel_Titulo: TPanel
     Left = 0
     Top = 0
-    Width = 1100
+    Width = 1144
     Height = 50
     Align = alTop
     Alignment = taLeftJustify
@@ -50,7 +50,7 @@ object Form_Venda: TForm_Venda
   object PanelEstado: TPanel
     Left = 0
     Top = 50
-    Width = 1100
+    Width = 1144
     Height = 28
     Align = alTop
     BevelOuter = bvNone
@@ -97,7 +97,7 @@ object Form_Venda: TForm_Venda
   object GroupBoxDados: TGroupBox
     Left = 0
     Top = 78
-    Width = 1100
+    Width = 1144
     Height = 140
     Align = alTop
     Caption = ' Dados da Venda '
@@ -308,7 +308,7 @@ object Form_Venda: TForm_Venda
   object GroupBoxItem: TGroupBox
     Left = 0
     Top = 218
-    Width = 1100
+    Width = 1144
     Height = 148
     Align = alTop
     Caption = ' Digita'#231#227'o do Item '
@@ -644,7 +644,7 @@ object Form_Venda: TForm_Venda
   object GroupBoxItens: TGroupBox
     Left = 0
     Top = 366
-    Width = 1100
+    Width = 1144
     Height = 178
     Align = alClient
     Caption = ' Itens da Venda '
@@ -734,7 +734,7 @@ object Form_Venda: TForm_Venda
   object GroupBoxFechamento: TGroupBox
     Left = 0
     Top = 544
-    Width = 1100
+    Width = 1144
     Height = 110
     Align = alBottom
     Caption = ' Fechamento da Venda '
@@ -877,7 +877,7 @@ object Form_Venda: TForm_Venda
   object PanelRodape: TPanel
     Left = 0
     Top = 654
-    Width = 1100
+    Width = 1144
     Height = 66
     Align = alBottom
     BevelOuter = bvNone
@@ -963,8 +963,28 @@ object Form_Venda: TForm_Venda
       TabOrder = 4
       OnClick = BtnFecharVendaClick
     end
-    object BtnInserir: TBitBtn
+    object BtnImprimirCupom: TBitBtn
       Left = 354
+      Top = 12
+      Width = 140
+      Height = 42
+      Hint = 'Imprime o cupom da venda atual'
+      Caption = 'Imprimir Cupom'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = 2263842
+      Font.Height = -13
+      Font.Name = 'Segoe UI'
+      Font.Style = [fsBold]
+      Margin = 8
+      ParentFont = False
+      ParentShowHint = False
+      ShowHint = True
+      Spacing = 6
+      TabOrder = 5
+      OnClick = BtnImprimirCupomClick
+    end
+    object BtnInserir: TBitBtn
+      Left = 500
       Top = 12
       Width = 100
       Height = 42
@@ -980,11 +1000,11 @@ object Form_Venda: TForm_Venda
       ParentShowHint = False
       ShowHint = True
       Spacing = 6
-      TabOrder = 5
+      TabOrder = 6
       OnClick = BtnInserirClick
     end
     object BtnEditar: TBitBtn
-      Left = 460
+      Left = 606
       Top = 12
       Width = 100
       Height = 42
@@ -1000,11 +1020,11 @@ object Form_Venda: TForm_Venda
       ParentShowHint = False
       ShowHint = True
       Spacing = 6
-      TabOrder = 6
+      TabOrder = 7
       OnClick = BtnEditarClick
     end
     object BtnGravar: TBitBtn
-      Left = 566
+      Left = 712
       Top = 12
       Width = 100
       Height = 42
@@ -1020,11 +1040,11 @@ object Form_Venda: TForm_Venda
       ParentShowHint = False
       ShowHint = True
       Spacing = 6
-      TabOrder = 7
+      TabOrder = 8
       OnClick = BtnGravarClick
     end
     object BtnCancelar: TBitBtn
-      Left = 672
+      Left = 818
       Top = 12
       Width = 100
       Height = 42
@@ -1040,12 +1060,12 @@ object Form_Venda: TForm_Venda
       ParentShowHint = False
       ShowHint = True
       Spacing = 6
-      TabOrder = 8
+      TabOrder = 9
       OnClick = BtnCancelarClick
       OnMouseDown = BtnCancelarMouseDown
     end
     object BtnExcluir: TBitBtn
-      Left = 778
+      Left = 924
       Top = 12
       Width = 100
       Height = 42
@@ -1061,11 +1081,11 @@ object Form_Venda: TForm_Venda
       ParentShowHint = False
       ShowHint = True
       Spacing = 6
-      TabOrder = 9
+      TabOrder = 10
       OnClick = BtnExcluirClick
     end
     object BtnSair: TBitBtn
-      Left = 884
+      Left = 1030
       Top = 12
       Width = 100
       Height = 42
@@ -1081,7 +1101,7 @@ object Form_Venda: TForm_Venda
       ParentShowHint = False
       ShowHint = True
       Spacing = 6
-      TabOrder = 10
+      TabOrder = 11
       OnClick = BtnSairClick
       OnMouseDown = BtnSairMouseDown
     end

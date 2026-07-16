@@ -52,6 +52,7 @@ const
   ICN_EXCLUIR   = #$E74D;
   ICN_SAIR      = #$E8BB;
   ICN_TRAVA     = #$E72E; // Lock (Fechar/Abrir venda)
+  ICN_IMPRIMIR  = #$E749; // Print (Cupom)
   ICN_ADICIONAR = #$E73E; // CheckMark (Adicionar item)
   ICN_REMOVER   = #$E74D; // Delete (Remover item)
   ICN_PESQUISA  = #$E721; // Search (Pesquisar cliente)
@@ -118,6 +119,7 @@ type
     BtnUltimo: TBitBtn;
     ShapeSep: TBevel;
     BtnFecharVenda: TBitBtn;
+    BtnImprimirCupom: TBitBtn;
     BtnInserir: TBitBtn;
     BtnEditar: TBitBtn;
     BtnGravar: TBitBtn;
@@ -162,6 +164,7 @@ type
     procedure BtnSairMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure BtnFecharVendaClick(Sender: TObject);
+    procedure BtnImprimirCupomClick(Sender: TObject);
     procedure BtnAdicionarItemClick(Sender: TObject);
     procedure BtnRemoverItemClick(Sender: TObject);
     procedure BtnPesquisarClienteClick(Sender: TObject);
@@ -234,7 +237,9 @@ var
 
 implementation
 
-uses DataModule, Mensagens, ConsultaCliente, ConsultaProduto, ObserveHooks, UITheme;
+uses
+  DataModule, Mensagens, ConsultaCliente, ConsultaProduto, ObserveHooks,
+  UITheme, CupomVenda;
 
 {$R *.dfm}
 
@@ -251,6 +256,7 @@ begin
   AplicarBotaoBootstrap(BtnInserir, bbkSuccess, ICN_INSERIR);
   AplicarBotaoBootstrap(BtnAdicionarItem, bbkSuccess, ICN_ADICIONAR);
   AplicarBotaoBootstrap(BtnFecharVenda, bbkSuccess, ICN_TRAVA);
+  AplicarBotaoBootstrap(BtnImprimirCupom, bbkPrimary, ICN_IMPRIMIR);
   AplicarBotaoBootstrap(BtnEditar, bbkWarning, ICN_EDITAR);
   AplicarBotaoBootstrap(BtnGravar, bbkPrimary, ICN_GRAVAR);
   AplicarBotaoBootstrap(BtnCancelar, bbkSecondary, ICN_CANCELAR);
@@ -262,7 +268,7 @@ end;
 procedure TForm_Venda.AplicarLayoutInicial;
 begin
   Color := COR_PAGE;
-  Constraints.MinWidth := 1000;
+  Constraints.MinWidth := 1040;
   Constraints.MinHeight := 620;
   AplicarHeaderPrimary(Panel_Titulo);
   AplicarFormEstiloWeb(Self);
@@ -297,7 +303,7 @@ begin
   if not Assigned(PanelRodape) then
     Exit;
 
-  // Rodape: nav + Fechar + CRUD a esquerda; Sair a direita.
+  // Rodape: nav + Fechar + Cupom + CRUD a esquerda; Sair a direita.
   X := MARGEM;
   BtnPrimeiro.Left := X;
   Inc(X, BtnPrimeiro.Width + GAP);
@@ -311,6 +317,8 @@ begin
   Inc(X, ShapeSep.Width + GAP_GRUPO);
   BtnFecharVenda.Left := X;
   Inc(X, BtnFecharVenda.Width + GAP);
+  BtnImprimirCupom.Left := X;
+  Inc(X, BtnImprimirCupom.Width + GAP);
   BtnInserir.Left := X;
   Inc(X, BtnInserir.Width + GAP);
   BtnEditar.Left := X;
@@ -580,6 +588,9 @@ begin
   end;
   BtnFecharVenda.Enabled :=
     (Estado = dsBrowse) and (not Dm.SqlVenda.IsEmpty);
+  BtnImprimirCupom.Enabled :=
+    (Estado = dsBrowse) and (not Dm.SqlVenda.IsEmpty) and
+    (Dm.SqlVendaTOTAL_LIQUIDO.AsFloat > 0);
 end;
 
 { Chained events do DataSource }
@@ -1550,6 +1561,24 @@ begin
   AtualizarEstadoUI;
   if NovaSituacao = 'A' then
     ReagendarFocoNoCampo(EditCodigoProduto);
+end;
+
+{ Imprimir cupom }
+
+procedure TForm_Venda.BtnImprimirCupomClick(Sender: TObject);
+begin
+  if Dm.SqlVenda.IsEmpty then
+    Exit;
+  if Dm.SqlVenda.State in [dsInsert, dsEdit] then
+    Exit;
+  if Dm.SqlVendaTOTAL_LIQUIDO.AsFloat <= 0 then
+  begin
+    MensagemDlg('A venda nao possui itens para impressao do cupom.',
+      mtInformation, [mbOK], 0);
+    Exit;
+  end;
+
+  TForm_CupomVenda.Emitir(Self, Dm.SqlVendaCODIGO.AsInteger);
 end;
 
 { Actions }

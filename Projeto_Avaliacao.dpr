@@ -11,6 +11,7 @@ uses
   Produto in 'Produto\Produto.pas' {Form_Produto},
   ConsultaProduto in 'Produto\ConsultaProduto.pas' {Form_ConsultaProduto},
   Venda in 'Venda\Venda.pas' {Form_Venda},
+  CupomVenda in 'Venda\CupomVenda.pas' {Form_CupomVenda},
   Login in 'Login\Login.pas' {Form_Login},
   UsuarioAuth in 'Usuario\UsuarioAuth.pas',
   Usuario in 'Usuario\Usuario.pas' {Form_Usuario},
