@@ -642,9 +642,6 @@ object DM: TDM
       '  MARCA = :MARCA,'
       '  GRUPO = :GRUPO,'
       '  PRECO_VENDA = :PRECO_VENDA,'
-      '  PRECO_CUSTO = :PRECO_CUSTO,'
-      '  MARGEM_LUCRO = :MARGEM_LUCRO,'
-      '  UND = :UND,'
       '  ESTOQUE_ATUAL = :ESTOQUE_ATUAL'
       'where'
       ' CODIGO = :OLD_CODIGO')
