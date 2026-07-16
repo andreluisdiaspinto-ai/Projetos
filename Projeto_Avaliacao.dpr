@@ -17,6 +17,8 @@ uses
   Usuario in 'Usuario\Usuario.pas' {Form_Usuario},
   RelatorioCliente in 'Relatorio\RelatorioCliente.pas' {Form_RelatorioCliente},
   RelatorioProduto in 'Relatorio\RelatorioProduto.pas' {Form_RelatorioProduto},
+  RelatorioTabelaPrecos in 'Relatorio\RelatorioTabelaPrecos.pas' {Form_RelatorioTabelaPrecos},
+  RelatorioLucratividade in 'Relatorio\RelatorioLucratividade.pas' {Form_RelatorioLucratividade},
   RelatorioVenda in 'Relatorio\RelatorioVenda.pas' {Form_RelatorioVenda},
   RelatorioVendaAnalitica in 'Relatorio\RelatorioVendaAnalitica.pas' {Form_RelatorioVendaAnalitica},
   RelatorioVendaCliente in 'Relatorio\RelatorioVendaCliente.pas' {Form_RelatorioVendaCliente},

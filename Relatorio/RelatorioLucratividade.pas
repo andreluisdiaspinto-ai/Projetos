@@ -1,18 +1,9 @@
-unit RelatorioProduto;
+unit RelatorioLucratividade;
 
-{ Filtro para Relatorio de Produtos (mesmas regras do RelatorioCliente).
+{ Filtro para Relatorio de Lucratividade (mesmas regras do RelatorioProduto).
 
-  Filtros disponiveis:
-    1 - Ordem do resultado: alfabetica (DESCRICAO) ou por CODIGO (radio);
-    2 - Faixa de codigo (inicial/final);
-    3 - Referencia (prefixo, sem diferenciar maiusculas);
-    4 - Marca (prefixo, sem diferenciar maiusculas);
-    5 - Grupo (prefixo, sem diferenciar maiusculas).
-
-  O botao Pesquisar monta a QueryProduto com os filtros informados e
-  atualiza a DBGridProduto, exibindo o percentual da tarefa executada.
-  A impressao e feita pelo FastReport com o layout guardado na tabela
-  RELATORIO (campo BLOB ARQUIVO), usando a QueryProduto como fonte. }
+  Campos: CODIGO, DESCRICAO, ESTOQUE_ATUAL, PRECO_CUSTO, PRECO_VENDA,
+  MARGEM_LUCRO, LUCRO_PRODUTO, TOTAL_CUSTO_ESTOQUE, TOTAL_VENDA_ESTOQUE. }
 
 interface
 
@@ -44,13 +35,13 @@ const
   // Layout FastReport guardado na tabela RELATORIO (campo BLOB ARQUIVO).
   // O arquivo .fr3 em disco e usado apenas na primeira execucao, para
   // alimentar a tabela.
-  NOME_RELATORIO_PRODUTO = 'RELATORIO_PRODUTO';
-  ARQUIVO_FR3            = 'Relatorio_Produto.fr3';
+  NOME_RELATORIO_LUCRATIVIDADE = 'RELATORIO_LUCRATIVIDADE';
+  ARQUIVO_FR3                   = 'Relatorio_Lucratividade.fr3';
   PASTA_FR3              = 'C:\Avaliacao Delphi_Firebird\Andre_luis\Projeto\Fr3';
   PASTA_FR3_RELATIVA     = 'Fr3';
 
 type
-  TForm_RelatorioProduto = class(TForm)
+  TForm_RelatorioLucratividade = class(TForm)
     Panel_Titulo: TPanel;
 
     PanelFiltros: TPanel;
@@ -68,7 +59,7 @@ type
     LabelProgresso: TLabel;
     ProgressBarPesquisa: TProgressBar;
 
-    DBGridProduto: TDBGrid;
+    DBGridLucratividade: TDBGrid;
 
     PanelRodape: TPanel;
     BtnPesquisar: TBitBtn;
@@ -76,10 +67,10 @@ type
     BtnImprimir: TBitBtn;
     BtnSair: TBitBtn;
 
-    QueryProduto: TIBQuery;
-    DsProduto: TDataSource;
-    frxDBDatasetProduto: TfrxDBDataset;
-    frxReportProduto: TfrxReport;
+    QueryLucratividade: TIBQuery;
+    DsLucratividade: TDataSource;
+    frxDBDatasetLucratividade: TfrxDBDataset;
+    frxReportLucratividade: TfrxReport;
     frxExportPDF: TfrxPDFExport;
     frxExportExcel: TfrxXMLExport;
     frxExportWord: TfrxRTFExport;
@@ -91,7 +82,7 @@ type
     procedure EditFocoEnter(Sender: TObject);
     procedure EditFocoExit(Sender: TObject);
     procedure EditNumericoKeyPress(Sender: TObject; var Key: Char);
-    procedure DBGridProdutoDrawColumnCell(Sender: TObject;
+    procedure DBGridLucratividadeDrawColumnCell(Sender: TObject;
       const Rect: TRect; DataCol: Integer; Column: TColumn;
       State: TGridDrawState);
     procedure BtnPesquisarClick(Sender: TObject);
@@ -100,6 +91,10 @@ type
     procedure BtnSairClick(Sender: TObject);
   private
     FQtdItens: Integer;
+    FTotalCusto: Double;
+    FTotalVenda: Double;
+    FTotalLucro: Double;
+    FMargemTotal: Double;
     FLinhaZebra: Integer;
     procedure ConfigurarGlyphsBotoes;
     function ValidarFaixaCodigo(out ACodigoDe, ACodigoAte: Integer;
@@ -110,6 +105,7 @@ type
     procedure DestacarColunaOrdenacao;
     function LocalizarArquivoFr3: string;
     procedure GravarRelatorioEmbutidoNoBanco(const ANome: string);
+    procedure SincronizarLayoutFr3NoBanco;
     function CarregarRelatorioDoBanco(const ANome: string;
       Stream: TStream): Boolean;
     function DescricaoFiltros: string;
@@ -118,14 +114,14 @@ type
     procedure PrepararLayoutParaImpressao;
     function CampoFloatSeguro(const ANomeCampo: string): Double;
     function CampoStringSeguro(const ANomeCampo: string): string;
-    procedure frxReportProdutoBeforePrint(Sender: TfrxReportComponent);
+    procedure frxReportLucratividadeBeforePrint(Sender: TfrxReportComponent);
     procedure ExibirRelatorio;
   public
     { Public declarations }
   end;
 
 var
-  Form_RelatorioProduto: TForm_RelatorioProduto;
+  Form_RelatorioLucratividade: TForm_RelatorioLucratividade;
 
 implementation
 
@@ -135,7 +131,7 @@ uses DataModule, Mensagens, RelatorioExportacaoFast, UITheme;
 
 { Utilitarios visuais (mesmo padrao do RelatorioCliente) }
 
-procedure TForm_RelatorioProduto.ConfigurarGlyphsBotoes;
+procedure TForm_RelatorioLucratividade.ConfigurarGlyphsBotoes;
 begin
   AplicarBotaoBootstrap(BtnPesquisar, bbkOutline, ICN_PESQUISA);
   AplicarBotaoBootstrap(BtnLimpar, bbkOutline, ICN_LIMPAR);
@@ -145,11 +141,15 @@ end;
 
 { Ciclo de vida }
 
-procedure TForm_RelatorioProduto.FormCreate(Sender: TObject);
+procedure TForm_RelatorioLucratividade.FormCreate(Sender: TObject);
 var
   CaminhoFr3: string;
 begin
   FQtdItens := 0;
+  FTotalCusto := 0;
+  FTotalVenda := 0;
+  FTotalLucro := 0;
+  FMargemTotal := 0;
   FLinhaZebra := 0;
 
   Color := COR_PAGE;
@@ -157,32 +157,34 @@ begin
   AplicarFormEstiloWeb(Self);
   AplicarPainelCard(PanelFiltros);
   ConfigurarGlyphsBotoes;
-  TRelatorioExportacaoFast.VincularExportacoes(frxReportProduto, frxExportPDF,
+  TRelatorioExportacaoFast.VincularExportacoes(frxReportLucratividade, frxExportPDF,
     frxExportExcel, frxExportWord, frxExportCSV);
-  frxReportProduto.OnBeforePrint := frxReportProdutoBeforePrint;
+  frxReportLucratividade.OnBeforePrint := frxReportLucratividadeBeforePrint;
 
   CaminhoFr3 := LocalizarArquivoFr3;
   if CaminhoFr3 <> '' then
   begin
-    frxReportProduto.LoadFromFile(CaminhoFr3);
+    frxReportLucratividade.LoadFromFile(CaminhoFr3);
     PrepararLayoutParaImpressao;
-    GravarRelatorioEmbutidoNoBanco(NOME_RELATORIO_PRODUTO);
-  end;
+    GravarRelatorioEmbutidoNoBanco(NOME_RELATORIO_LUCRATIVIDADE);
+  end
+  else
+    SincronizarLayoutFr3NoBanco;
 
   Pesquisar;
 end;
 
-procedure TForm_RelatorioProduto.FormClose(Sender: TObject;
+procedure TForm_RelatorioLucratividade.FormClose(Sender: TObject;
   var Action: TCloseAction);
 begin
-  QueryProduto.Close;
+  QueryLucratividade.Close;
   Action := caFree;
-  Form_RelatorioProduto := nil;
+  Form_RelatorioLucratividade := nil;
 end;
 
 { Navegacao por teclado }
 
-procedure TForm_RelatorioProduto.FormKeyDown(Sender: TObject; var Key: Word;
+procedure TForm_RelatorioLucratividade.FormKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 begin
   if Key = VK_ESCAPE then
@@ -206,19 +208,19 @@ end;
 
 { Cores de foco }
 
-procedure TForm_RelatorioProduto.EditFocoEnter(Sender: TObject);
+procedure TForm_RelatorioLucratividade.EditFocoEnter(Sender: TObject);
 begin
   if Sender is TEdit then
     TEdit(Sender).Color := COR_EDIT_FOCO;
 end;
 
-procedure TForm_RelatorioProduto.EditFocoExit(Sender: TObject);
+procedure TForm_RelatorioLucratividade.EditFocoExit(Sender: TObject);
 begin
   if Sender is TEdit then
     TEdit(Sender).Color := COR_EDIT_NORMAL;
 end;
 
-procedure TForm_RelatorioProduto.EditNumericoKeyPress(Sender: TObject;
+procedure TForm_RelatorioLucratividade.EditNumericoKeyPress(Sender: TObject;
   var Key: Char);
 begin
   // Faixa de codigo aceita apenas digitos (e backspace).
@@ -228,13 +230,20 @@ end;
 
 { Grid - linhas com cores alternadas (zebra) }
 
-procedure TForm_RelatorioProduto.DBGridProdutoDrawColumnCell(Sender: TObject;
+procedure TForm_RelatorioLucratividade.DBGridLucratividadeDrawColumnCell(Sender: TObject;
   const Rect: TRect; DataCol: Integer; Column: TColumn;
   State: TGridDrawState);
 var
   Grid: TDBGrid;
 begin
   Grid := TDBGrid(Sender);
+
+  if not Assigned(Grid.DataSource) or not Assigned(Grid.DataSource.DataSet) or
+     not Grid.DataSource.DataSet.Active or Grid.DataSource.DataSet.IsEmpty then
+  begin
+    Grid.DefaultDrawColumnCell(Rect, DataCol, Column, State);
+    Exit;
+  end;
 
   if not (gdSelected in State) then
   begin
@@ -250,7 +259,7 @@ end;
 
 { Pesquisa }
 
-function TForm_RelatorioProduto.ValidarFaixaCodigo(out ACodigoDe,
+function TForm_RelatorioLucratividade.ValidarFaixaCodigo(out ACodigoDe,
   ACodigoAte: Integer; out ATemDe, ATemAte: Boolean): Boolean;
 begin
   Result := True;
@@ -267,25 +276,28 @@ begin
   end;
 end;
 
-procedure TForm_RelatorioProduto.AjustarFormatoCampos;
+procedure TForm_RelatorioLucratividade.AjustarFormatoCampos;
 
   procedure Formatar(const NomeCampo, Formato: string);
   var
     Fld: TField;
   begin
-    Fld := QueryProduto.FindField(NomeCampo);
-    if Fld is TBCDField then
-      TBCDField(Fld).DisplayFormat := Formato
-    else if Fld is TFloatField then
-      TFloatField(Fld).DisplayFormat := Formato;
+    Fld := QueryLucratividade.FindField(NomeCampo);
+    if Fld is TNumericField then
+      TNumericField(Fld).DisplayFormat := Formato;
   end;
 
 begin
-  Formatar('PRECO_VENDA',   '#,##0.00');
-  Formatar('ESTOQUE_ATUAL', '#,##0.000');
+  Formatar('ESTOQUE_ATUAL',       '#,##0.000');
+  Formatar('PRECO_CUSTO',         '#,##0.00');
+  Formatar('PRECO_VENDA',         '#,##0.00');
+  Formatar('MARGEM_LUCRO',        '#,##0.00');
+  Formatar('LUCRO_PRODUTO',       '#,##0.00');
+  Formatar('TOTAL_CUSTO_ESTOQUE', '#,##0.00');
+  Formatar('TOTAL_VENDA_ESTOQUE', '#,##0.00');
 end;
 
-procedure TForm_RelatorioProduto.AtualizarProgresso(Percentual: Integer);
+procedure TForm_RelatorioLucratividade.AtualizarProgresso(Percentual: Integer);
 begin
   ProgressBarPesquisa.Position := Percentual;
   LabelProgresso.Caption := Format('Executando pesquisa: %d%%', [Percentual]);
@@ -294,7 +306,7 @@ begin
   LabelProgresso.Update;
 end;
 
-procedure TForm_RelatorioProduto.DestacarColunaOrdenacao;
+procedure TForm_RelatorioLucratividade.DestacarColunaOrdenacao;
 var
   I: Integer;
   CampoOrdem: string;
@@ -307,26 +319,27 @@ begin
 
   // Titulo da coluna ordenada em destaque (invertido: fundo navy, texto
   // branco); as demais voltam ao visual padrao.
-  for I := 0 to DBGridProduto.Columns.Count - 1 do
-    if SameText(DBGridProduto.Columns[I].FieldName, CampoOrdem) then
+  for I := 0 to DBGridLucratividade.Columns.Count - 1 do
+    if SameText(DBGridLucratividade.Columns[I].FieldName, CampoOrdem) then
     begin
-      DBGridProduto.Columns[I].Title.Color      := COR_PRIMARY;
-      DBGridProduto.Columns[I].Title.Font.Color := clWhite;
+      DBGridLucratividade.Columns[I].Title.Color      := COR_PRIMARY;
+      DBGridLucratividade.Columns[I].Title.Font.Color := clWhite;
     end
     else
     begin
-      DBGridProduto.Columns[I].Title.Color      := clBtnFace;
-      DBGridProduto.Columns[I].Title.Font.Color := COR_PRIMARY;
+      DBGridLucratividade.Columns[I].Title.Color      := clBtnFace;
+      DBGridLucratividade.Columns[I].Title.Font.Color := COR_PRIMARY;
     end;
 end;
 
-procedure TForm_RelatorioProduto.Pesquisar;
+procedure TForm_RelatorioLucratividade.Pesquisar;
 var
   Where, Sql: string;
   CodigoDe, CodigoAte: Integer;
   TemDe, TemAte: Boolean;
   QueryContagem: TIBQuery;
   Total, Lidos, Passo: Integer;
+  TotalCusto, TotalVenda, TotalLucro, MargemTotal: Double;
 
   procedure PreencherParametros(Query: TIBQuery);
   begin
@@ -348,6 +361,10 @@ begin
     Exit;
 
   AtualizarProgresso(0);
+  TotalCusto := 0;
+  TotalVenda := 0;
+  TotalLucro := 0;
+  MargemTotal := 0;
 
   // Monta o WHERE somente com os filtros efetivamente preenchidos.
   Where := ' from PRODUTO where 1 = 1';
@@ -363,13 +380,17 @@ begin
     Where := Where + ' and UPPER(GRUPO) like UPPER(:PGRUPO)';
 
   // Filtro 1: ordem alfabetica ou por codigo.
+  // coalesce em todos os numericos: evita NULL no FastReport (Null -> Integer).
   Sql := 'select coalesce(CODIGO, 0) as CODIGO, ' +
          'coalesce(DESCRICAO, '''') as DESCRICAO, ' +
-         'coalesce(REFERENCIA, '''') as REFERENCIA, ' +
-         'coalesce(MARCA, '''') as MARCA, ' +
-         'coalesce(GRUPO, '''') as GRUPO, ' +
+         'coalesce(ESTOQUE_ATUAL, 0) as ESTOQUE_ATUAL, ' +
+         'coalesce(PRECO_CUSTO, 0) as PRECO_CUSTO, ' +
          'coalesce(PRECO_VENDA, 0) as PRECO_VENDA, ' +
-         'coalesce(ESTOQUE_ATUAL, 0) as ESTOQUE_ATUAL' + Where;
+         'coalesce(MARGEM_LUCRO, 0) as MARGEM_LUCRO, ' +
+         '(coalesce(PRECO_VENDA, 0) * coalesce(ESTOQUE_ATUAL, 0)) - ' +
+         '(coalesce(PRECO_CUSTO, 0) * coalesce(ESTOQUE_ATUAL, 0)) as LUCRO_PRODUTO, ' +
+         '(coalesce(PRECO_CUSTO, 0) * coalesce(ESTOQUE_ATUAL, 0)) as TOTAL_CUSTO_ESTOQUE, ' +
+         '(coalesce(PRECO_VENDA, 0) * coalesce(ESTOQUE_ATUAL, 0)) as TOTAL_VENDA_ESTOQUE' + Where;
   if RadioGrupoOrdem.ItemIndex = 1 then
     Sql := Sql + ' order by CODIGO'
   else
@@ -379,8 +400,8 @@ begin
   Total := 0;
   QueryContagem := TIBQuery.Create(nil);
   try
-    QueryContagem.Database    := QueryProduto.Database;
-    QueryContagem.Transaction := QueryProduto.Transaction;
+    QueryContagem.Database    := QueryLucratividade.Database;
+    QueryContagem.Transaction := QueryLucratividade.Transaction;
     QueryContagem.SQL.Text    := 'select count(*)' + Where;
     PreencherParametros(QueryContagem);
     QueryContagem.Open;
@@ -391,12 +412,12 @@ begin
   end;
   AtualizarProgresso(15);
 
-  QueryProduto.DisableControls;
+  QueryLucratividade.DisableControls;
   try
-    QueryProduto.Close;
-    QueryProduto.SQL.Text := Sql;
-    PreencherParametros(QueryProduto);
-    QueryProduto.Open;
+    QueryLucratividade.Close;
+    QueryLucratividade.SQL.Text := Sql;
+    PreencherParametros(QueryLucratividade);
+    QueryLucratividade.Open;
     AjustarFormatoCampos;
     AtualizarProgresso(25);
 
@@ -404,125 +425,91 @@ begin
     // o percentual proporcionalmente a quantidade ja carregada.
     if Total > 0 then
     begin
+      TotalCusto := 0;
+      TotalVenda := 0;
+      TotalLucro := 0;
       Lidos := 0;
       Passo := Total div 20;
       if Passo < 1 then
         Passo := 1;
-      while not QueryProduto.Eof do
+      while not QueryLucratividade.Eof do
       begin
+        TotalCusto := TotalCusto + CampoFloatSeguro('TOTAL_CUSTO_ESTOQUE');
+        TotalVenda := TotalVenda + CampoFloatSeguro('TOTAL_VENDA_ESTOQUE');
+        TotalLucro := TotalLucro + CampoFloatSeguro('LUCRO_PRODUTO');
         Inc(Lidos);
         if (Lidos mod Passo) = 0 then
           AtualizarProgresso(25 + (Lidos * 70 div Total));
-        QueryProduto.Next;
+        QueryLucratividade.Next;
       end;
-      QueryProduto.First;
+      QueryLucratividade.First;
     end;
 
     AtualizarProgresso(100);
+    if TotalCusto > 0 then
+      MargemTotal := Round(((TotalVenda - TotalCusto) / TotalCusto) * 10000) / 100
+    else
+      MargemTotal := 0;
+
     FQtdItens := Total;
-    LabelProgresso.Caption := Format('Pesquisa concluida: %d produto(s)',
-      [Total]);
+    FTotalCusto := TotalCusto;
+    FTotalVenda := TotalVenda;
+    FTotalLucro := TotalLucro;
+    FMargemTotal := MargemTotal;
+
+    LabelProgresso.Caption :=
+      Format('Pesquisa concluida: %d produto(s) | Custo est.: %s | Venda est.: %s | ' +
+        'Lucro: %s | Margem total: %s%%',
+        [Total, FormatFloat('#,##0.00', TotalCusto),
+         FormatFloat('#,##0.00', TotalVenda), FormatFloat('#,##0.00', TotalLucro),
+         FormatFloat('0.00', MargemTotal)]);
   finally
-    QueryProduto.EnableControls;
+    QueryLucratividade.EnableControls;
   end;
 
   DestacarColunaOrdenacao;
 end;
 
-procedure TForm_RelatorioProduto.BtnPesquisarClick(Sender: TObject);
-begin
-  Pesquisar;
-
-  if QueryProduto.Active and QueryProduto.IsEmpty then
-    MensagemDlg('Nenhum produto encontrado para os filtros informados.',
-      mtInformation, [mbOK], 0);
-end;
-
-procedure TForm_RelatorioProduto.BtnLimparClick(Sender: TObject);
-begin
-  // Volta os filtros ao estado original do formulario.
-  EditCodigoDe.Clear;
-  EditCodigoAte.Clear;
-  EditReferencia.Clear;
-  EditMarca.Clear;
-  EditGrupo.Clear;
-  RadioGrupoOrdem.ItemIndex := 0;
-
-  // Refaz a pesquisa sem filtros (lista completa em ordem alfabetica).
-  BtnPesquisar.Click;
-
-  // No Limpar o indicador de progresso desaparece, voltando o formulario
-  // ao estado original.
-  ProgressBarPesquisa.Position := 0;
-  LabelProgresso.Caption := '';
-
-  if EditCodigoDe.CanFocus then
-    EditCodigoDe.SetFocus;
-end;
-
-{ Impressao - layout FastReport guardado na tabela RELATORIO }
-
-function TForm_RelatorioProduto.LocalizarArquivoFr3: string;
-var
-  PastaExe: string;
-  Bases: array of string;
-  I: Integer;
-  Tentativa: string;
-begin
-  Result   := '';
-  PastaExe := IncludeTrailingPathDelimiter(ExtractFilePath(Application.ExeName));
-
-  Bases := [
-    IncludeTrailingPathDelimiter(PASTA_FR3),
-    PastaExe + PASTA_FR3_RELATIVA + PathDelim,
-    PastaExe + 'Projeto\' + PASTA_FR3_RELATIVA + PathDelim,
-    PastaExe,
-    PastaExe + '..' + PathDelim + PASTA_FR3_RELATIVA + PathDelim,
-    PastaExe + '..' + PathDelim + '..' + PathDelim + PASTA_FR3_RELATIVA + PathDelim
-  ];
-
-  for I := Low(Bases) to High(Bases) do
-  begin
-    Tentativa := Bases[I] + ARQUIVO_FR3;
-    if FileExists(Tentativa) then
-      Exit(ExpandFileName(Tentativa));
-  end;
-end;
-
-function TForm_RelatorioProduto.CampoFloatSeguro(
+function TForm_RelatorioLucratividade.CampoFloatSeguro(
   const ANomeCampo: string): Double;
 var
   Fld: TField;
 begin
   Result := 0;
-  Fld := QueryProduto.FindField(ANomeCampo);
+  Fld := QueryLucratividade.FindField(ANomeCampo);
   if Assigned(Fld) and not Fld.IsNull then
     Result := Fld.AsFloat;
 end;
 
-function TForm_RelatorioProduto.CampoStringSeguro(
+function TForm_RelatorioLucratividade.CampoStringSeguro(
   const ANomeCampo: string): string;
 var
   Fld: TField;
 begin
   Result := '';
-  Fld := QueryProduto.FindField(ANomeCampo);
+  Fld := QueryLucratividade.FindField(ANomeCampo);
   if Assigned(Fld) and not Fld.IsNull then
     Result := Trim(Fld.AsString);
 end;
 
-procedure TForm_RelatorioProduto.PrepararLayoutParaImpressao;
+procedure TForm_RelatorioLucratividade.PrepararLayoutParaImpressao;
 var
   I: Integer;
   Obj: TObject;
   Memo: TfrxMemoView;
+  Band: TfrxMasterData;
 begin
-  frxReportProduto.ScriptText.Text := 'begin' + sLineBreak + 'end.';
-  frxReportProduto.OnBeforePrint := frxReportProdutoBeforePrint;
+  // Remove script e bindings que quebram com NULL (Null -> String/Integer).
+  frxReportLucratividade.ScriptText.Text := 'begin' + sLineBreak + 'end.';
+  frxReportLucratividade.OnBeforePrint := frxReportLucratividadeBeforePrint;
 
-  for I := 0 to frxReportProduto.AllObjects.Count - 1 do
+  Band := frxReportLucratividade.FindObject('MasterData1') as TfrxMasterData;
+  if Assigned(Band) then
+    Band.OnBeforePrint := '';
+
+  for I := 0 to frxReportLucratividade.AllObjects.Count - 1 do
   begin
-    Obj := frxReportProduto.AllObjects[I];
+    Obj := frxReportLucratividade.AllObjects[I];
     if not (Obj is TfrxMemoView) then
       Continue;
     Memo := TfrxMemoView(Obj);
@@ -537,11 +524,11 @@ begin
   end;
 end;
 
-procedure TForm_RelatorioProduto.frxReportProdutoBeforePrint(
+procedure TForm_RelatorioLucratividade.frxReportLucratividadeBeforePrint(
   Sender: TfrxReportComponent);
 var
   Memo: TfrxMemoView;
-  Texto: string;
+  Descricao: string;
   CorZebra: TColor;
   BrushFill: TfrxBrushFill;
 begin
@@ -573,24 +560,101 @@ begin
     Memo.Text := FormatFloat('000000', CampoFloatSeguro('CODIGO'))
   else if SameText(Memo.Name, 'MemoItemDescricao') then
   begin
-    Texto := CampoStringSeguro('DESCRICAO');
-    if Length(Texto) > 36 then
-      Texto := Copy(Texto, 1, 36);
-    Memo.Text := Texto;
+    Descricao := CampoStringSeguro('DESCRICAO');
+    if Length(Descricao) > 38 then
+      Descricao := Copy(Descricao, 1, 38);
+    Memo.Text := Descricao;
   end
-  else if SameText(Memo.Name, 'MemoItemReferencia') then
-    Memo.Text := Copy(CampoStringSeguro('REFERENCIA'), 1, 12)
-  else if SameText(Memo.Name, 'MemoItemMarca') then
-    Memo.Text := Copy(CampoStringSeguro('MARCA'), 1, 14)
-  else if SameText(Memo.Name, 'MemoItemGrupo') then
-    Memo.Text := Copy(CampoStringSeguro('GRUPO'), 1, 14)
-  else if SameText(Memo.Name, 'MemoItemPreco') then
-    Memo.Text := FormatFloat('#,##0.00', CampoFloatSeguro('PRECO_VENDA'))
   else if SameText(Memo.Name, 'MemoItemEstoque') then
-    Memo.Text := FormatFloat('#,##0.000', CampoFloatSeguro('ESTOQUE_ATUAL'));
+    Memo.Text := FormatFloat('#,##0.000', CampoFloatSeguro('ESTOQUE_ATUAL'))
+  else if SameText(Memo.Name, 'MemoItemCusto') then
+    Memo.Text := FormatFloat('#,##0.00', CampoFloatSeguro('PRECO_CUSTO'))
+  else if SameText(Memo.Name, 'MemoItemVenda') then
+    Memo.Text := FormatFloat('#,##0.00', CampoFloatSeguro('PRECO_VENDA'))
+  else if SameText(Memo.Name, 'MemoItemMargem') then
+    Memo.Text := FormatFloat('#,##0.00', CampoFloatSeguro('MARGEM_LUCRO'))
+  else if SameText(Memo.Name, 'MemoItemLucro') then
+    Memo.Text := FormatFloat('#,##0.00', CampoFloatSeguro('LUCRO_PRODUTO'))
+  else if SameText(Memo.Name, 'MemoItemTotCusto') then
+    Memo.Text := FormatFloat('#,##0.00', CampoFloatSeguro('TOTAL_CUSTO_ESTOQUE'))
+  else if SameText(Memo.Name, 'MemoItemTotVenda') then
+    Memo.Text := FormatFloat('#,##0.00', CampoFloatSeguro('TOTAL_VENDA_ESTOQUE'));
 end;
 
-procedure TForm_RelatorioProduto.GravarRelatorioEmbutidoNoBanco(
+procedure TForm_RelatorioLucratividade.BtnPesquisarClick(Sender: TObject);
+begin
+  Pesquisar;
+
+  if QueryLucratividade.Active and QueryLucratividade.IsEmpty then
+    MensagemDlg('Nenhum produto encontrado para os filtros informados.',
+      mtInformation, [mbOK], 0);
+end;
+
+procedure TForm_RelatorioLucratividade.BtnLimparClick(Sender: TObject);
+begin
+  // Volta os filtros ao estado original do formulario.
+  EditCodigoDe.Clear;
+  EditCodigoAte.Clear;
+  EditReferencia.Clear;
+  EditMarca.Clear;
+  EditGrupo.Clear;
+  RadioGrupoOrdem.ItemIndex := 0;
+
+  // Refaz a pesquisa sem filtros (lista completa em ordem alfabetica).
+  BtnPesquisar.Click;
+
+  // No Limpar o indicador de progresso desaparece, voltando o formulario
+  // ao estado original.
+  ProgressBarPesquisa.Position := 0;
+  LabelProgresso.Caption := '';
+
+  if EditCodigoDe.CanFocus then
+    EditCodigoDe.SetFocus;
+end;
+
+{ Impressao - layout FastReport na tabela RELATORIO com fallback embutido }
+
+function TForm_RelatorioLucratividade.LocalizarArquivoFr3: string;
+var
+  PastaExe: string;
+  Bases: array of string;
+  I: Integer;
+  Tentativa: string;
+begin
+  Result   := '';
+  PastaExe := IncludeTrailingPathDelimiter(ExtractFilePath(Application.ExeName));
+
+  Bases := [
+    IncludeTrailingPathDelimiter(PASTA_FR3),
+    PastaExe + PASTA_FR3_RELATIVA + PathDelim,
+    PastaExe + 'Projeto\' + PASTA_FR3_RELATIVA + PathDelim,
+    PastaExe,
+    PastaExe + '..' + PathDelim + PASTA_FR3_RELATIVA + PathDelim,
+    PastaExe + '..' + PathDelim + '..' + PathDelim + PASTA_FR3_RELATIVA + PathDelim
+  ];
+
+  for I := Low(Bases) to High(Bases) do
+  begin
+    Tentativa := Bases[I] + ARQUIVO_FR3;
+    if FileExists(Tentativa) then
+      Exit(ExpandFileName(Tentativa));
+  end;
+end;
+
+procedure TForm_RelatorioLucratividade.SincronizarLayoutFr3NoBanco;
+var
+  CaminhoFr3: string;
+begin
+  CaminhoFr3 := LocalizarArquivoFr3;
+  if CaminhoFr3 = '' then
+    Exit;
+
+  frxReportLucratividade.LoadFromFile(CaminhoFr3);
+  PrepararLayoutParaImpressao;
+  GravarRelatorioEmbutidoNoBanco(NOME_RELATORIO_LUCRATIVIDADE);
+end;
+
+procedure TForm_RelatorioLucratividade.GravarRelatorioEmbutidoNoBanco(
   const ANome: string);
 var
   Query: TIBQuery;
@@ -598,13 +662,13 @@ var
 begin
   Stream := TMemoryStream.Create;
   try
-    frxReportProduto.SaveToStream(Stream);
+    frxReportLucratividade.SaveToStream(Stream);
     Stream.Position := 0;
 
     Query := TIBQuery.Create(nil);
     try
-      Query.Database    := QueryProduto.Database;
-      Query.Transaction := QueryProduto.Transaction;
+      Query.Database    := QueryLucratividade.Database;
+      Query.Transaction := QueryLucratividade.Transaction;
       Query.SQL.Text :=
         'update or insert into RELATORIO ' +
         '  (NOME, DESCRICAO, ARQUIVO, DATA_ALTERACAO) ' +
@@ -613,7 +677,7 @@ begin
         'matching (NOME)';
       Query.ParamByName('PNOME').AsString      := ANome;
       Query.ParamByName('PDESCRICAO').AsString :=
-        'Relatorio de Cadastro de Produto';
+        'Relatorio de Lucratividade';
       Query.ParamByName('PARQUIVO').LoadFromStream(Stream, ftBlob);
       Query.ExecSQL;
       Dm.IBTransaction1.CommitRetaining;
@@ -625,7 +689,33 @@ begin
   end;
 end;
 
-function TForm_RelatorioProduto.DescricaoFiltros: string;
+function TForm_RelatorioLucratividade.CarregarRelatorioDoBanco(const ANome: string;
+  Stream: TStream): Boolean;
+var
+  Query: TIBQuery;
+begin
+  Query := TIBQuery.Create(nil);
+  try
+    Query.Database    := QueryLucratividade.Database;
+    Query.Transaction := QueryLucratividade.Transaction;
+    Query.SQL.Text :=
+      'select ARQUIVO from RELATORIO where NOME = :PNOME';
+    Query.ParamByName('PNOME').AsString := ANome;
+    Query.Open;
+
+    Result := not (Query.IsEmpty or Query.FieldByName('ARQUIVO').IsNull);
+    if Result then
+    begin
+      TBlobField(Query.FieldByName('ARQUIVO')).SaveToStream(Stream);
+      Stream.Position := 0;
+    end;
+    Query.Close;
+  finally
+    Query.Free;
+  end;
+end;
+
+function TForm_RelatorioLucratividade.DescricaoFiltros: string;
 
   procedure Acrescentar(const ATexto: string);
   begin
@@ -640,7 +730,7 @@ begin
   if RadioGrupoOrdem.ItemIndex = 1 then
     Acrescentar('Ordem: Codigo')
   else
-    Acrescentar('Ordem: Descricao do produto');
+    Acrescentar('Ordem: Alfabetica');
 
   if Trim(EditCodigoDe.Text) <> '' then
     Acrescentar('Codigo de: ' + Trim(EditCodigoDe.Text));
@@ -657,15 +747,16 @@ begin
     Result := 'Todos os registros';
 end;
 
-procedure TForm_RelatorioProduto.AplicarCabecalhoRelatorio;
+procedure TForm_RelatorioLucratividade.AplicarCabecalhoRelatorio;
 var
   Memo: TfrxMemoView;
   Title: TfrxBand;
+  I: Integer;
 
   function GarantirMemo(const ANome: string; ALeft, ATop, AWidth,
     AHeight: Extended): TfrxMemoView;
   begin
-    Result := frxReportProduto.FindObject(ANome) as TfrxMemoView;
+    Result := frxReportLucratividade.FindObject(ANome) as TfrxMemoView;
     if Assigned(Result) then
       Exit;
     if not Assigned(Title) then
@@ -700,8 +791,19 @@ var
       Memo.Text := ATexto;
   end;
 
+const
+  MEMOS_CABECALHO_LEGADO: array[0..6] of string = (
+    'MemoData', 'MemoHora', 'MemoDataEmis', 'Date', 'Time', 'Page', 'TotalPages');
 begin
-  Title := frxReportProduto.FindObject('ReportTitle1') as TfrxBand;
+  Title := frxReportLucratividade.FindObject('ReportTitle1') as TfrxBand;
+
+  for I := Low(MEMOS_CABECALHO_LEGADO) to High(MEMOS_CABECALHO_LEGADO) do
+  begin
+    Memo := frxReportLucratividade.FindObject(MEMOS_CABECALHO_LEGADO[I])
+      as TfrxMemoView;
+    if Assigned(Memo) then
+      Memo.Visible := False;
+  end;
 
   PosicionarCabecalho('MemoDataLabel',   560, 3.77953,  55, 'Data....:', False);
   PosicionarCabecalho('MemoDataValor',   618, 3.77953,  95, '[Date]', True);
@@ -711,118 +813,128 @@ begin
   PosicionarCabecalho('MemoPaginaValor', 618, 41.57483, 95,
     '[Page#]/[TotalPages#]', True);
 
-  Memo := frxReportProduto.FindObject('MemoDataValor') as TfrxMemoView;
+  Memo := frxReportLucratividade.FindObject('MemoDataValor') as TfrxMemoView;
   if Assigned(Memo) then
   begin
     Memo.DisplayFormat.Kind := fkDateTime;
     Memo.DisplayFormat.FormatStr := 'dd/mm/yyyy';
   end;
 
-  Memo := frxReportProduto.FindObject('MemoHoraValor') as TfrxMemoView;
+  Memo := frxReportLucratividade.FindObject('MemoHoraValor') as TfrxMemoView;
   if Assigned(Memo) then
   begin
     Memo.DisplayFormat.Kind := fkDateTime;
     Memo.DisplayFormat.FormatStr := 'hh:mm:ss';
   end;
 
-  Memo := frxReportProduto.FindObject('MemoFiltroValor') as TfrxMemoView;
+  Memo := frxReportLucratividade.FindObject('MemoFiltroValor') as TfrxMemoView;
   if Assigned(Memo) then
   begin
     Memo.Width := 500;
     Memo.Text := DescricaoFiltros;
   end;
 
-  Memo := frxReportProduto.FindObject('MemoTituloRelatorio') as TfrxMemoView;
+  Memo := frxReportLucratividade.FindObject('MemoTituloRelatorio') as TfrxMemoView;
   if Assigned(Memo) then
   begin
     Memo.Left := 160;
     Memo.Width := 390;
-    Memo.Text := 'Relatorio de Cadastro de Produto';
+    Memo.Text := 'Relatorio de Lucratividade';
   end;
 
-  Memo := frxReportProduto.FindObject('MemoColDescricao') as TfrxMemoView;
+  Memo := frxReportLucratividade.FindObject('MemoColDescricao') as TfrxMemoView;
   if Assigned(Memo) then
     Memo.Text := 'Descri'#231#227'o do Produto';
-
-  Memo := frxReportProduto.FindObject('MemoRodape') as TfrxMemoView;
-  if Assigned(Memo) then
-    Memo.Text := 'Relatorio Desenvolvido e Impresso Por: Ganso Sistemas ' +
-      'CopyRight(c) Reservados.';
 end;
 
-procedure TForm_RelatorioProduto.AplicarTotaisRelatorio;
+procedure TForm_RelatorioLucratividade.AplicarTotaisRelatorio;
 var
   Memo: TfrxMemoView;
-begin
-  Memo := frxReportProduto.FindObject('MemoQtdItens') as TfrxMemoView;
-  if Assigned(Memo) then
-    Memo.Text := IntToStr(FQtdItens);
-end;
 
-function TForm_RelatorioProduto.CarregarRelatorioDoBanco(const ANome: string;
-  Stream: TStream): Boolean;
-var
-  Query: TIBQuery;
-begin
-  Query := TIBQuery.Create(nil);
-  try
-    Query.Database    := QueryProduto.Database;
-    Query.Transaction := QueryProduto.Transaction;
-    Query.SQL.Text :=
-      'select ARQUIVO from RELATORIO where NOME = :PNOME';
-    Query.ParamByName('PNOME').AsString := ANome;
-    Query.Open;
-
-    Result := not (Query.IsEmpty or Query.FieldByName('ARQUIVO').IsNull);
-    if Result then
-    begin
-      TBlobField(Query.FieldByName('ARQUIVO')).SaveToStream(Stream);
-      Stream.Position := 0;
-    end;
-    Query.Close;
-  finally
-    Query.Free;
+  procedure PreencherMemo(const ANome, ATexto: string);
+  begin
+    Memo := frxReportLucratividade.FindObject(ANome) as TfrxMemoView;
+    if Assigned(Memo) then
+      Memo.Text := ATexto;
   end;
+
+  procedure PosicionarMemo(const ANome: string; ALeft, ATop, AWidth: Extended;
+    AAlinharDireita: Boolean);
+  begin
+    Memo := frxReportLucratividade.FindObject(ANome) as TfrxMemoView;
+    if not Assigned(Memo) then
+      Exit;
+    Memo.Left := ALeft;
+    Memo.Top := ATop;
+    Memo.Width := AWidth;
+    Memo.Height := 15;
+    if AAlinharDireita then
+      Memo.HAlign := haRight
+    else
+      Memo.HAlign := haLeft;
+  end;
+
+begin
+  // Coluna 1: Itens impressos / Lucratividade (valores alinhados).
+  // Coluna 2: Custo estoque / Margem total (mesma coluna de valores).
+  PosicionarMemo('MemoQtdItensLabel', 6, 26, 100, False);
+  PosicionarMemo('MemoQtdItens', 108, 26, 90, True);
+  PosicionarMemo('MemoLblCusto', 210, 26, 90, False);
+  PosicionarMemo('MemoTotalCusto', 302, 26, 80, True);
+  PosicionarMemo('MemoLblVenda', 390, 26, 90, False);
+  PosicionarMemo('MemoTotalVenda', 482, 26, 80, True);
+  PosicionarMemo('MemoLblLucro', 6, 44, 100, False);
+  PosicionarMemo('MemoTotalLucro', 108, 44, 90, True);
+  PosicionarMemo('MemoLblMargem', 210, 44, 90, False);
+  PosicionarMemo('MemoMargemTotal', 302, 44, 80, True);
+
+  PreencherMemo('MemoQtdItens', IntToStr(FQtdItens));
+  PreencherMemo('MemoTotalCusto', FormatFloat('#,##0.00', FTotalCusto));
+  PreencherMemo('MemoTotalVenda', FormatFloat('#,##0.00', FTotalVenda));
+  PreencherMemo('MemoTotalLucro', FormatFloat('#,##0.00', FTotalLucro));
+  PreencherMemo('MemoMargemTotal', FormatFloat('0.00', FMargemTotal) + '%');
 end;
 
-procedure TForm_RelatorioProduto.ExibirRelatorio;
+procedure TForm_RelatorioLucratividade.ExibirRelatorio;
 var
   Stream: TMemoryStream;
   CaminhoFr3: string;
 begin
   Stream := TMemoryStream.Create;
   try
+    // Impressao: prioriza .fr3 em disco; senao carrega da tabela RELATORIO.
     CaminhoFr3 := LocalizarArquivoFr3;
     if CaminhoFr3 <> '' then
-      frxReportProduto.LoadFromFile(CaminhoFr3)
-    else if CarregarRelatorioDoBanco(NOME_RELATORIO_PRODUTO, Stream) then
-      frxReportProduto.LoadFromStream(Stream)
+      frxReportLucratividade.LoadFromFile(CaminhoFr3)
+    else if CarregarRelatorioDoBanco(NOME_RELATORIO_LUCRATIVIDADE, Stream) then
+      frxReportLucratividade.LoadFromStream(Stream)
     else
     begin
       MensagemDlg('Nao foi possivel carregar o relatorio "' +
-        NOME_RELATORIO_PRODUTO +
+        NOME_RELATORIO_LUCRATIVIDADE +
         '" (arquivo .fr3 e tabela RELATORIO).',
         mtError, [mbOK], 0);
       Exit;
     end;
 
     PrepararLayoutParaImpressao;
-    GravarRelatorioEmbutidoNoBanco(NOME_RELATORIO_PRODUTO);
+    // Persiste o layout limpo (sem bindings/script) na tabela RELATORIO.
+    GravarRelatorioEmbutidoNoBanco(NOME_RELATORIO_LUCRATIVIDADE);
     FLinhaZebra := 0;
 
-    TRelatorioExportacaoFast.VincularExportacoes(frxReportProduto, frxExportPDF,
+    TRelatorioExportacaoFast.VincularExportacoes(frxReportLucratividade, frxExportPDF,
       frxExportExcel, frxExportWord, frxExportCSV);
     AplicarCabecalhoRelatorio;
     AplicarTotaisRelatorio;
-    frxReportProduto.ShowReport;
+    frxReportLucratividade.ShowReport;
   finally
     Stream.Free;
   end;
 end;
 
-procedure TForm_RelatorioProduto.BtnImprimirClick(Sender: TObject);
+procedure TForm_RelatorioLucratividade.BtnImprimirClick(Sender: TObject);
 begin
-  if not QueryProduto.Active or QueryProduto.IsEmpty then
+  if not QueryLucratividade.Active or QueryLucratividade.IsEmpty then
   begin
     MensagemDlg('Nao ha produtos para imprimir. Utilize o botao ' +
       'Pesquisar primeiro.', mtInformation, [mbOK], 0);
@@ -830,7 +942,7 @@ begin
   end;
 
   // Impressao via FastReport: o layout vem da tabela RELATORIO e os dados
-  // da QueryProduto (ja filtrada pela pesquisa).
+  // da QueryLucratividade (ja filtrada pela pesquisa).
   try
     ExibirRelatorio;
   except
@@ -840,7 +952,7 @@ begin
   end;
 end;
 
-procedure TForm_RelatorioProduto.BtnSairClick(Sender: TObject);
+procedure TForm_RelatorioLucratividade.BtnSairClick(Sender: TObject);
 begin
   Close;
 end;

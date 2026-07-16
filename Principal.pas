@@ -77,6 +77,8 @@ type
     procedure MenuItemTemasClick(Sender: TObject);
     procedure MenuItemRelClientesClick(Sender: TObject);
     procedure MenuItemRelProdutosClick(Sender: TObject);
+    procedure MenuItemRelTabelaPrecosClick(Sender: TObject);
+    procedure MenuItemRelLucratividadeClick(Sender: TObject);
     procedure MenuItemRelVendasClick(Sender: TObject);
     procedure MenuItemRelVendasAnaliticoClick(Sender: TObject);
     procedure MenuItemRelVendasClienteClick(Sender: TObject);
@@ -141,6 +143,7 @@ var
 implementation
 
 uses Cliente, Produto, Venda, RelatorioCliente, RelatorioProduto,
+  RelatorioTabelaPrecos, RelatorioLucratividade,
   RelatorioVenda, RelatorioVendaAnalitica, RelatorioVendaCliente,
   RelatorioVendaProduto, RelatorioVendaSinteticaCliente,
   RelatorioVendaClienteGrade,
@@ -537,6 +540,28 @@ begin
       if not Assigned(Form_RelatorioProduto) then
         Form_RelatorioProduto := TForm_RelatorioProduto.Create(Self);
       AbrirFormularioMDI(Form_RelatorioProduto);
+    end);
+end;
+
+procedure TForm_Principal.MenuItemRelTabelaPrecosClick(Sender: TObject);
+begin
+  ExecutarComCarregamento(Self,
+    procedure
+    begin
+      if not Assigned(Form_RelatorioTabelaPrecos) then
+        Form_RelatorioTabelaPrecos := TForm_RelatorioTabelaPrecos.Create(Self);
+      AbrirFormularioMDI(Form_RelatorioTabelaPrecos);
+    end);
+end;
+
+procedure TForm_Principal.MenuItemRelLucratividadeClick(Sender: TObject);
+begin
+  ExecutarComCarregamento(Self,
+    procedure
+    begin
+      if not Assigned(Form_RelatorioLucratividade) then
+        Form_RelatorioLucratividade := TForm_RelatorioLucratividade.Create(Self);
+      AbrirFormularioMDI(Form_RelatorioLucratividade);
     end);
 end;
 

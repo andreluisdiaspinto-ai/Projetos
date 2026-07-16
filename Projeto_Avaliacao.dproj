@@ -104,6 +104,8 @@
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
         <DCC_ExeOutput>C:\Andre\</DCC_ExeOutput>
+        <PostBuildEvent><![CDATA[if not exist "$(DCC_ExeOutput)Fr3" mkdir "$(DCC_ExeOutput)Fr3"
+xcopy /Y /Q "$(MSBuildProjectDirectory)\Fr3\*.fr3" "$(DCC_ExeOutput)Fr3\"]]></PostBuildEvent>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_MajorVer>2</VerInfo_MajorVer>
@@ -192,6 +194,14 @@
         </DCCReference>
         <DCCReference Include="Relatorio\RelatorioProduto.pas">
             <Form>Form_RelatorioProduto</Form>
+        </DCCReference>
+        <DCCReference Include="Relatorio\RelatorioTabelaPrecos.pas">
+            <Form>Form_RelatorioTabelaPrecos</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="Relatorio\RelatorioLucratividade.pas">
+            <Form>Form_RelatorioLucratividade</Form>
+            <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="Relatorio\RelatorioVenda.pas">
             <Form>Form_RelatorioVenda</Form>

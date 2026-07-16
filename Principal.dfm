@@ -576,6 +576,14 @@ object Form_Principal: TForm_Principal
       Caption = 'Relat'#243'rio de Produtos'
       OnClick = MenuItemRelProdutosClick
     end
+    object MenuItemRelTabelaPrecos: TMenuItem
+      Caption = 'Relat'#243'rio de Tabela de Pre'#231'os'
+      OnClick = MenuItemRelTabelaPrecosClick
+    end
+    object MenuItemRelLucratividade: TMenuItem
+      Caption = 'Relat'#243'rio de Lucratividade'
+      OnClick = MenuItemRelLucratividadeClick
+    end
     object MenuItemRelVendas: TMenuItem
       Caption = 'Relat'#243'rio de Vendas Sint'#233'tico'
       OnClick = MenuItemRelVendasClick
