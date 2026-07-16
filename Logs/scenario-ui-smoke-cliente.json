@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "name": "ui-smoke-cliente",
+  "steps": [
+    { "op": "Action", "form": "TForm_Principal", "action": "ActClientes", "control": "PanelItemClientes" },
+    { "op": "WaitForm", "form": "TForm_Cliente", "timeoutMs": 8000 },
+    { "op": "Action", "form": "TForm_Cliente", "action": "ActPrimeiro", "control": "BtnPrimeiro" },
+    { "op": "Action", "form": "TForm_Cliente", "action": "ActProximo", "control": "BtnProximo" },
+    { "op": "CloseForm", "form": "TForm_Cliente" }
+  ]
+}

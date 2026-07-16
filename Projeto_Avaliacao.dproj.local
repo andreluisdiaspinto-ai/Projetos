@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2026/03/06 11:10:32.000.263,=C:\Users\Dev08\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>2026/03/06 11:20:22.000.506,C:\Users\Dev08\Documents\Embarcadero\Studio\Projects\Unit1.pas=C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\Principal.pas</Transaction>
+    <Transaction>2026/03/06 11:20:22.000.506,C:\Users\Dev08\Documents\Embarcadero\Studio\Projects\Unit1.dfm=C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\Principal.dfm</Transaction>
+    <Transaction>2026/03/06 11:22:57.000.563,=C:\Users\Dev08\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>2026/03/06 11:23:17.000.389,C:\Users\Dev08\Documents\Embarcadero\Studio\Projects\Unit1.pas=C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\DataModule\DataModule.pas</Transaction>
+    <Transaction>2026/03/06 11:23:17.000.389,C:\Users\Dev08\Documents\Embarcadero\Studio\Projects\Unit1.dfm=C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\DataModule\DataModule.dfm</Transaction>
+    <Transaction>2026/03/06 11:35:11.000.480,C:\Users\Dev08\Documents\Embarcadero\Studio\Projects\Project1.dproj=C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\Projeto_Avaliacao.dproj</Transaction>
+    <Transaction>2026/03/06 11:35:39.000.776,=C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\Unit1.pas</Transaction>
+    <Transaction>2026/03/06 11:48:12.000.979,C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\Unit1.dfm=C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\Cliente\Cliente.dfm</Transaction>
+    <Transaction>2026/03/06 11:48:12.000.979,C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\Unit1.pas=C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\Cliente\Cliente.pas</Transaction>
+    <Transaction>2026/03/06 14:01:18.000.781,=C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\Unit1.pas</Transaction>
+    <Transaction>2026/03/06 14:03:33.000.129,C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\Unit1.dfm=C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\Produto\Produto.dfm</Transaction>
+    <Transaction>2026/03/06 14:03:33.000.129,C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\Unit1.pas=C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\Produto\Produto.pas</Transaction>
+    <Transaction>2026/03/06 14:05:53.000.758,=C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\Unit1.pas</Transaction>
+    <Transaction>2026/03/06 14:07:53.000.811,C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\Unit1.pas=C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\Venda.pas</Transaction>
+    <Transaction>2026/03/06 14:07:53.000.811,C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\Unit1.dfm=C:\Avaliação Delphi_Firebird\Andre_luis\Projeto\Venda.dfm</Transaction>
+    <Transaction>2026/03/11 09:03:17.000.285,=C:\Avaliacao Delphi_Firebird\Andre_luis\Projeto\Unit1.pas</Transaction>
+    <Transaction>2026/03/11 09:05:14.000.051,C:\Avaliacao Delphi_Firebird\Andre_luis\Projeto\Venda.dfm=C:\Avaliacao Delphi_Firebird\Andre_luis\Projeto\Venda\Venda.dfm</Transaction>
+    <Transaction>2026/03/11 09:05:14.000.051,C:\Avaliacao Delphi_Firebird\Andre_luis\Projeto\Venda.pas=C:\Avaliacao Delphi_Firebird\Andre_luis\Projeto\Venda\Venda.pas</Transaction>
+    <Transaction>2026/03/11 09:25:10.000.725,=C:\Avaliacao Delphi_Firebird\Andre_luis\Projeto\Unit1.pas</Transaction>
+    <Transaction>2026/03/11 09:29:01.000.913,C:\Avaliacao Delphi_Firebird\Andre_luis\Projeto\Unit1.pas=C:\Avaliacao Delphi_Firebird\Andre_luis\Projeto\Venda\VendaItem.pas</Transaction>
+    <Transaction>2026/03/11 09:29:01.000.913,C:\Avaliacao Delphi_Firebird\Andre_luis\Projeto\Unit1.dfm=C:\Avaliacao Delphi_Firebird\Andre_luis\Projeto\Venda\VendaItem.dfm</Transaction>
+  </Transactions>
+</BorlandProject>

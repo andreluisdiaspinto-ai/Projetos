@@ -1,0 +1,15 @@
+diff a/Projeto/Cliente/Cliente.dfm b/Projeto/Cliente/Cliente.dfm	(rejected hunks)
+@@ -57,10 +57,10 @@
+     ParentBackground = False
+     TabOrder = 1
+     object LabelEstadoAtual: TLabel
+-      Left = 797
++      Left = 0
+       Top = 0
+-      Width = 123
+-      Height = 15
++      Width = 920
++      Height = 28
+       Margins.Right = 12
+       Align = alClient
+       Alignment = taRightJustify
