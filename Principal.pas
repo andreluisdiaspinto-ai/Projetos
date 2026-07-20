@@ -115,7 +115,8 @@ function ObterVersaoExecutavel: string;
 
 const
   ARQUIVO_FUNDO          = 'Ganso_Sistemas.jpg';
-  PASTA_IMAGENS          = 'C:\Avaliacao Delphi_Firebird\Andre_luis\Projeto\Imagens';
+  // Pasta absoluta opcional (vazia = so caminhos relativos ao exe / projeto).
+  PASTA_IMAGENS          = '';
   PASTA_IMAGENS_RELATIVA = 'Imagens';
   EMPRESA_NOME           = 'Ganso Sistemas';
   APP_DESCRICAO          = 'Sistema de Gerenciamento de Retaguarda';
@@ -702,35 +703,37 @@ end;
 function TForm_Principal_LocalizarArquivoFundo(out Encontrado: string): Boolean;
 var
   PastaExe: string;
+  PastaAtual: string;
   Bases: array of string;
   Extensoes: array of string;
   NomeBase: string;
   I, J: Integer;
   Tentativa: string;
-  PastaAbsBase: string;
-  PastaRelBase: string;
+  PastaRel: string;
 begin
   Result     := False;
   Encontrado := '';
   NomeBase   := ChangeFileExt(ExtractFileName(ARQUIVO_FUNDO), '');
   PastaExe   := IncludeTrailingPathDelimiter(ExtractFilePath(Application.ExeName));
+  PastaAtual := IncludeTrailingPathDelimiter(GetCurrentDir);
+  PastaRel   := PASTA_IMAGENS_RELATIVA + PathDelim;
 
-  if TForm_Principal_EhCaminhoAbsoluto(PASTA_IMAGENS) then
-    PastaAbsBase := IncludeTrailingPathDelimiter(PASTA_IMAGENS)
-  else
-    PastaAbsBase := '';
-
-  PastaRelBase := PASTA_IMAGENS_RELATIVA + PathDelim;
-
+  // Ordem: ao lado do exe (distribuicao), pasta do projeto (exe em D:\Andre),
+  // subindo niveis (Win32\Debug) e diretorio corrente do IDE.
   SetLength(Bases, 0);
-  if PastaAbsBase <> '' then
-    Bases := Bases + [PastaAbsBase];
+  if (PASTA_IMAGENS <> '') and TForm_Principal_EhCaminhoAbsoluto(PASTA_IMAGENS) then
+    Bases := Bases + [IncludeTrailingPathDelimiter(PASTA_IMAGENS)];
+
   Bases := Bases + [
-    PastaExe + PastaRelBase,
+    PastaExe + PastaRel,
     PastaExe,
-    PastaExe + '..' + PathDelim + PastaRelBase,
-    PastaExe + '..' + PathDelim + '..' + PathDelim + PastaRelBase,
-    PastaExe + '..' + PathDelim + '..' + PathDelim + '..' + PathDelim + PastaRelBase
+    PastaExe + 'Projeto' + PathDelim + PastaRel,
+    PastaExe + '..' + PathDelim + PastaRel,
+    PastaExe + '..' + PathDelim + 'Projeto' + PathDelim + PastaRel,
+    PastaExe + '..' + PathDelim + '..' + PathDelim + PastaRel,
+    PastaExe + '..' + PathDelim + '..' + PathDelim + '..' + PathDelim + PastaRel,
+    PastaAtual + PastaRel,
+    PastaAtual + 'Projeto' + PathDelim + PastaRel
   ];
 
   Extensoes := ['.jpg', '.jpeg', '.png', '.bmp'];
@@ -738,7 +741,7 @@ begin
   for I := Low(Bases) to High(Bases) do
     for J := Low(Extensoes) to High(Extensoes) do
     begin
-      Tentativa := Bases[I] + NomeBase + Extensoes[J];
+      Tentativa := ExpandFileName(Bases[I] + NomeBase + Extensoes[J]);
       if FileExists(Tentativa) then
       begin
         Encontrado := Tentativa;

@@ -7,7 +7,8 @@ uses
   System.SysUtils, System.Classes, System.Actions,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
   Vcl.ExtCtrls, Vcl.StdCtrls, Vcl.Mask, Vcl.DBCtrls,
-  Vcl.Buttons, Vcl.ActnList, Vcl.WinXCtrls,
+  Vcl.Buttons, Vcl.ActnList, Vcl.WinXCtrls, Vcl.ComCtrls,
+  Vcl.Grids, Vcl.DBGrids,
   Data.DB, IBX.IBCustomDataSet, IBX.IBQuery;
 
 const
@@ -20,6 +21,11 @@ const
   COR_EDIT_FOCO     = $00FFF5EA;
   COR_EDIT_ERRO     = $00D6D6FF;
   COR_EDIT_READONLY = $00F0F0F0;
+
+  // Cores alternadas das linhas do grid (zebra)
+  COR_GRID_LINHA_PAR   = clWhite;
+  COR_GRID_LINHA_IMPAR = $00F3E9DC;
+  COR_GRID_TEXTO       = $00333333;
 
   // Icones Segoe MDL2 Assets (Windows 10/11)
   ICN_PRIMEIRO  = #$E892;
@@ -40,6 +46,9 @@ type
     LabelEstadoAtual: TLabel;
 
     PanelDados: TPanel;
+    PageControlProduto: TPageControl;
+    TabCadastro: TTabSheet;
+    TabMovimentacao: TTabSheet;
 
     PanelIdentificacao: TPanel;
     LabelSecaoIdent: TLabel;
@@ -77,6 +86,15 @@ type
     DBEditEstoqueAtual: TDBEdit;
     LabelMargemLucro: TLabel;
     DBEditMargemLucro: TDBEdit;
+
+    DBGridVndaItem: TDBGrid;
+    PanelTotaisMov: TPanel;
+    LabelTotalItens: TLabel;
+    EditTotalItens: TEdit;
+    LabelTotalLiquidoMov: TLabel;
+    EditTotalLiquidoMov: TEdit;
+    QueryMovProduto: TIBQuery;
+    DsMovProduto: TDataSource;
 
     PanelRodape: TPanel;
     BtnPrimeiro: TBitBtn;
@@ -140,6 +158,10 @@ type
     procedure DBEditPrecoCustoExit(Sender: TObject);
     procedure EditFocoEnter(Sender: TObject);
     procedure EditFocoExit(Sender: TObject);
+    procedure PageControlProdutoChange(Sender: TObject);
+    procedure DBGridVndaItemDrawColumnCell(Sender: TObject;
+      const Rect: TRect; DataCol: Integer; Column: TColumn;
+      State: TGridDrawState);
   private
     FValidando: Boolean;
     FIgnorarValidacao: Boolean;
@@ -154,6 +176,9 @@ type
     procedure AplicarLayoutInicial;
     procedure AtualizarEstadoUI;
     procedure RecalcularMargemLucro;
+    procedure ConfigurarQueryMovimentacao;
+    procedure CarregarMovimentacao;
+    procedure AtualizarTotaisMovimentacao;
 
     procedure DsProdutoDataChangeChained(Sender: TObject; Field: TField);
     procedure DsProdutoStateChangeChained(Sender: TObject);
@@ -354,6 +379,125 @@ begin
   Dm.SqlProduto.FieldByName('MARGEM_LUCRO').AsFloat := lMargem;
 end;
 
+procedure TForm_Produto.ConfigurarQueryMovimentacao;
+begin
+  if not Assigned(QueryMovProduto) then
+    Exit;
+
+  if QueryMovProduto.Active then
+    QueryMovProduto.Close;
+
+  // SQL definido em codigo para o IBX criar o parametro via ParamCheck
+  // (mesmo padrao de ConsultaProduto).
+  QueryMovProduto.SQL.Text :=
+    'select vc.codigo, vc.data_hora_venda, vi.codigo_produto, pr.descricao, ' +
+    'vi.quantidade, vi.preco_unitario, vi.total_liquido ' +
+    'from venda vc ' +
+    'inner join venda_item vi on vi.codigo_venda = vc.codigo ' +
+    'inner join produto pr on pr.codigo = vi.codigo_produto ' +
+    'where vi.codigo_produto = :CODIGO_PRODUTO ' +
+    'order by vc.data_hora_venda desc, vc.codigo desc';
+end;
+
+procedure TForm_Produto.CarregarMovimentacao;
+begin
+  if not Assigned(QueryMovProduto) then
+    Exit;
+
+  if QueryMovProduto.Active then
+    QueryMovProduto.Close;
+
+  if QueryMovProduto.SQL.Text = '' then
+    ConfigurarQueryMovimentacao;
+
+  if (not Assigned(Dm)) or (not Assigned(Dm.SqlProduto)) or
+     Dm.SqlProduto.IsEmpty or (Dm.SqlProduto.State = dsInsert) or
+     (Dm.SqlProduto.FieldByName('CODIGO').AsInteger <= 0) then
+  begin
+    AtualizarTotaisMovimentacao;
+    Exit;
+  end;
+
+  if QueryMovProduto.Params.FindParam('CODIGO_PRODUTO') = nil then
+    ConfigurarQueryMovimentacao;
+
+  QueryMovProduto.ParamByName('CODIGO_PRODUTO').AsInteger :=
+    Dm.SqlProduto.FieldByName('CODIGO').AsInteger;
+  QueryMovProduto.Open;
+
+  if QueryMovProduto.FindField('DATA_HORA_VENDA') is TDateTimeField then
+    TDateTimeField(QueryMovProduto.FieldByName('DATA_HORA_VENDA')).DisplayFormat :=
+      'dd/mm/yyyy hh:nn';
+  if QueryMovProduto.FindField('QUANTIDADE') is TNumericField then
+    TNumericField(QueryMovProduto.FieldByName('QUANTIDADE')).DisplayFormat :=
+      '#,##0.000';
+  if QueryMovProduto.FindField('PRECO_UNITARIO') is TNumericField then
+    TNumericField(QueryMovProduto.FieldByName('PRECO_UNITARIO')).DisplayFormat :=
+      '#,##0.00';
+  if QueryMovProduto.FindField('TOTAL_LIQUIDO') is TNumericField then
+    TNumericField(QueryMovProduto.FieldByName('TOTAL_LIQUIDO')).DisplayFormat :=
+      '#,##0.00';
+
+  AtualizarTotaisMovimentacao;
+end;
+
+procedure TForm_Produto.AtualizarTotaisMovimentacao;
+var
+  lTotItens, lTotLiquido: Double;
+begin
+  lTotItens   := 0;
+  lTotLiquido := 0;
+
+  if Assigned(QueryMovProduto) and QueryMovProduto.Active and
+     (not QueryMovProduto.IsEmpty) then
+  begin
+    QueryMovProduto.DisableControls;
+    try
+      QueryMovProduto.First;
+      while not QueryMovProduto.Eof do
+      begin
+        lTotItens   := lTotItens +
+          QueryMovProduto.FieldByName('QUANTIDADE').AsFloat;
+        lTotLiquido := lTotLiquido +
+          QueryMovProduto.FieldByName('TOTAL_LIQUIDO').AsFloat;
+        QueryMovProduto.Next;
+      end;
+      QueryMovProduto.First;
+    finally
+      QueryMovProduto.EnableControls;
+    end;
+  end;
+
+  EditTotalItens.Text       := FormatFloat('#,##0.000', lTotItens);
+  EditTotalLiquidoMov.Text  := FormatFloat('#,##0.00', lTotLiquido);
+end;
+
+procedure TForm_Produto.PageControlProdutoChange(Sender: TObject);
+begin
+  if PageControlProduto.ActivePage = TabMovimentacao then
+    CarregarMovimentacao;
+end;
+
+procedure TForm_Produto.DBGridVndaItemDrawColumnCell(Sender: TObject;
+  const Rect: TRect; DataCol: Integer; Column: TColumn;
+  State: TGridDrawState);
+var
+  Grid: TDBGrid;
+begin
+  Grid := TDBGrid(Sender);
+
+  if not (gdSelected in State) then
+  begin
+    if Odd(Grid.DataSource.DataSet.RecNo) then
+      Grid.Canvas.Brush.Color := COR_GRID_LINHA_IMPAR
+    else
+      Grid.Canvas.Brush.Color := COR_GRID_LINHA_PAR;
+    Grid.Canvas.Font.Color := COR_GRID_TEXTO;
+  end;
+
+  Grid.DefaultDrawColumnCell(Rect, DataCol, Column, State);
+end;
+
 { Chained events do DataSource }
 
 procedure TForm_Produto.DsProdutoDataChangeChained(Sender: TObject;
@@ -364,6 +508,8 @@ begin
   if Assigned(Field) and
      ((Field.FieldName = 'PRECO_CUSTO') or (Field.FieldName = 'PRECO_VENDA')) then
     RecalcularMargemLucro;
+  if (Field = nil) or SameText(Field.FieldName, 'CODIGO') then
+    CarregarMovimentacao;
   AtualizarEstadoUI;
 end;
 
@@ -616,12 +762,17 @@ begin
   Dm.DsProduto.OnStateChange := DsProdutoStateChangeChained;
 
   AtualizarEstadoUI;
+  ConfigurarQueryMovimentacao;
+  CarregarMovimentacao;
   ObserveLogOpenForm(Self);
   ObserveEmitSnapshot(Self, Dm.SqlProduto);
 end;
 
 procedure TForm_Produto.FormDestroy(Sender: TObject);
 begin
+  if Assigned(QueryMovProduto) and QueryMovProduto.Active then
+    QueryMovProduto.Close;
+
   if Assigned(Dm) and Assigned(Dm.DsProduto) then
   begin
     if TMethod(Dm.DsProduto.OnDataChange).Data = Self then
@@ -670,7 +821,8 @@ begin
   begin
     if (ActiveControl <> nil) and
        not (ActiveControl is TCustomMemo) and
-       not (ActiveControl is TCustomButton) then
+       not (ActiveControl is TCustomButton) and
+       not (ActiveControl is TCustomDBGrid) then
     begin
       Key := 0;
       SelectNext(ActiveControl, True, True);
@@ -684,7 +836,8 @@ begin
   begin
     if (ActiveControl <> nil) and
        not (ActiveControl is TCustomMemo) and
-       not (ActiveControl is TCustomButton) then
+       not (ActiveControl is TCustomButton) and
+       not (ActiveControl is TCustomDBGrid) then
     begin
       Key := 0;
       FIgnorarValidacao := True;
@@ -958,20 +1111,6 @@ begin
 end;
 
 end.
-
-end.
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
